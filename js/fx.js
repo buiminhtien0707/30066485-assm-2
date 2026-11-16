@@ -6,7 +6,7 @@ window.BCFx = (function () {
   function reduced() { return BCUI.reducedMotion(); }
 
   /* ---------- confetti burst (brand palette, canvas, self-cleaning) ---------- */
-  var COLORS = ["#C7361F", "#FFC93C", "#FAF3E7", "#191A1C"];
+  var COLORS = ["#C7361F", "#FFC93C", "#0F5E59", "#FAF3E7"];
 
   function confetti(big) {
     if (reduced()) return;

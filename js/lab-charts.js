@@ -27,7 +27,7 @@ window.BCLabCharts = (function () {
     var labels = ["0", "1", "2", "3"];
     counts.forEach(function (c, i) {
       var bh = (h - m * 2) * (c / max);
-      g.fillStyle = i === 0 ? "#C7361F" : "#FFC93C";
+      g.fillStyle = "#0F5E59";
       g.fillRect(m + i * (bw + 10), h - m - bh, bw, bh);
       g.strokeStyle = "#191A1C"; g.lineWidth = 2;
       g.strokeRect(m + i * (bw + 10), h - m - bh, bw, bh);
