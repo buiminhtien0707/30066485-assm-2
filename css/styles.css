@@ -439,6 +439,19 @@ img{ max-width:100%; }
 .acct-check{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; cursor:pointer; }
 .acct-err{ color:var(--red-2); font-weight:800; font-size:13px; min-height:18px; }
 .acct-note{ font-size:11px; opacity:.75; margin:2px 0 0; }
+.acct-two-col{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.acct-row-between{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+.acct-soon-badge{
+  display:inline-block; background:var(--red); color:var(--ink-on-dark);
+  border:2px solid var(--ink); border-radius:8px; padding:2px 8px;
+  font-family:var(--font-mono); font-size:11px; font-weight:800; letter-spacing:.03em;
+}
+.acct-soon-box{
+  border:var(--border); border-radius:12px; background:var(--paper);
+  box-shadow:3px 3px 0 var(--ink); padding:10px 12px;
+}
+.acct-soon-head{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:4px; font-size:14px; }
+.acct-soon-body{ margin:0; font-size:13px; line-height:1.45; font-weight:600; }
 .acct-import-row{ border-top:2px dashed var(--ink); padding-top:8px; text-align:center; }
 .acct-link-btn{
   border:none; background:transparent; color:var(--indigo);
@@ -456,5 +469,5 @@ img{ max-width:100%; }
 @media (max-width:520px){
   .acct-chip{ padding:3px 8px 3px 4px; font-size:11px; }
   .acct-chip .acct-name{ max-width:68px; overflow:hidden; text-overflow:ellipsis; }
-  .acct-pin-row{ grid-template-columns:1fr; }
+  .acct-pin-row,.acct-two-col{ grid-template-columns:1fr; }
 }
