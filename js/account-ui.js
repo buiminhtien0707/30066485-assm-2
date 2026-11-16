@@ -1,4 +1,4 @@
-/* account-ui.js — UI-only Sign in / Register preview modal (no backend DB).
+/* account-ui.js - UI-only Sign in / Register preview modal (no backend DB).
    Collects standard fields (Full Name, Email, Phone Number, Password) and
    clearly signals "Coming soon" when submitted, while keeping Guest play instant. */
 window.BCAccountUI = (function () {

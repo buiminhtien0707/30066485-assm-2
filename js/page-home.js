@@ -1,4 +1,4 @@
-/* page-home.js — render animals carousel + FAQ */
+/* page-home.js - render animals carousel + FAQ */
 window.BCPageHome = (function () {
   "use strict";
 
@@ -100,11 +100,11 @@ window.BCPageHome = (function () {
         payoutPill.style.color = matchCount === 3 ? "var(--ink-on-dark)" : "var(--ink)";
       } else {
         if (l === "vn") {
-          payoutPill.textContent = "Chưa trúng " + name + " — Nhấn để lắc lại! 🎲";
+          payoutPill.textContent = "Chưa trúng " + name + ": Nhấn để lắc lại! 🎲";
         } else if (l === "zh") {
-          payoutPill.textContent = "未中 " + name + " — 点击再试一次！🎲";
+          payoutPill.textContent = "未中 " + name + ": 点击再试一次！🎲";
         } else {
-          payoutPill.textContent = "No " + name + " matched — Tap to roll again! 🎲";
+          payoutPill.textContent = "No " + name + " matched: Tap to roll again! 🎲";
         }
         payoutPill.style.background = "var(--cream)";
         payoutPill.style.color = "var(--mut-ink)";

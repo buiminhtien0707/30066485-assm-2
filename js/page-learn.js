@@ -1,4 +1,4 @@
-/* page-learn.js — tabs + gallery + detail modal */
+/* page-learn.js - tabs + gallery + detail modal */
 window.BCPageLearn = (function () {
   "use strict";
 

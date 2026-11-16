@@ -1,4 +1,4 @@
-/* page-tet.js — timeline + feedback form with validation */
+/* page-tet.js - timeline + feedback form with validation */
 window.BCPageTet = (function () {
   "use strict";
 

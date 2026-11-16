@@ -1,4 +1,4 @@
-/* lab-charts.js — hand-drawn canvas charts (no libraries) */
+/* lab-charts.js - hand-drawn canvas charts (no libraries) */
 window.BCLabCharts = (function () {
   "use strict";
 
@@ -6,7 +6,9 @@ window.BCLabCharts = (function () {
     var dpr = window.devicePixelRatio || 1;
     canvas.width = canvas.clientWidth * dpr;
     canvas.height = canvas.clientHeight * dpr;
-    return canvas.getContext("2d");
+    var ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return ctx;
   }
 
   function draw(matchCounts, series) {
@@ -25,9 +27,11 @@ window.BCLabCharts = (function () {
     var labels = ["0", "1", "2", "3"];
     counts.forEach(function (c, i) {
       var bh = (h - m * 2) * (c / max);
-      g.fillStyle = "#2F4BD8";
+      g.fillStyle = i === 0 ? "#C7361F" : "#FFC93C";
       g.fillRect(m + i * (bw + 10), h - m - bh, bw, bh);
-      g.fillStyle = "#141414";
+      g.strokeStyle = "#191A1C"; g.lineWidth = 2;
+      g.strokeRect(m + i * (bw + 10), h - m - bh, bw, bh);
+      g.fillStyle = "#191A1C";
       g.font = "12px 'Space Mono',monospace";
       g.textAlign = "center";
       g.fillText(String(c), m + i * (bw + 10) + bw / 2, h - m - bh - 6);
@@ -44,7 +48,7 @@ window.BCLabCharts = (function () {
     var min = Math.min.apply(null, series);
     var max = Math.max.apply(null, series);
     if (Math.abs(max - min) < 0.001) { min -= 1; max += 1; }
-    g.strokeStyle = "#E8442E"; g.lineWidth = 3;
+    g.strokeStyle = "#C7361F"; g.lineWidth = 3;
     g.beginPath();
     series.forEach(function (v, i) {
       var x = m + (w - m * 2) * (i / (series.length - 1));

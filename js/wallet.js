@@ -1,4 +1,4 @@
-/* wallet.js — virtual-coin economy: hold/commit/settle, lì xì, stats */
+/* wallet.js - virtual-coin economy: hold/commit/settle, lì xì, stats */
 window.BCWallet = (function () {
   "use strict";
 
@@ -11,7 +11,7 @@ window.BCWallet = (function () {
 
   /* ---------- bets (hold until SHAKE commits them) ---------- */
   var holds = {};
-  var placed = [];      // stack of {id, amt} — undo removes the last placed chip
+  var placed = [];      // stack of {id, amt}: undo removes the last placed chip
   var lastBets = {};
   var lastStaked = 0;
   var MAX_PER_ANIMAL = 500;

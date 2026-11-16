@@ -1,4 +1,4 @@
-/* fx.js — game juice: confetti, screen shake, number count-up.
+/* fx.js - game juice: confetti, screen shake, number count-up.
    All effects collapse to no-ops under prefers-reduced-motion. */
 window.BCFx = (function () {
   "use strict";
@@ -6,7 +6,7 @@ window.BCFx = (function () {
   function reduced() { return BCUI.reducedMotion(); }
 
   /* ---------- confetti burst (brand palette, canvas, self-cleaning) ---------- */
-  var COLORS = ["#E8442E", "#FFC93C", "#2F4BD8", "#0E7A4A", "#FAF3E7"];
+  var COLORS = ["#C7361F", "#FFC93C", "#FAF3E7", "#191A1C"];
 
   function confetti(big) {
     if (reduced()) return;

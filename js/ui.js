@@ -1,4 +1,4 @@
-/* ui.js — global chrome: nav, drawer, toasts, lang, sound, coin pill, stats */
+/* ui.js - global chrome: nav, drawer, toasts, lang, sound, coin pill, stats */
 window.BCUI = (function () {
   "use strict";
 

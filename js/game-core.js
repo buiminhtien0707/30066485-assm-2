@@ -1,4 +1,4 @@
-/* game-core.js — pure game logic (no DOM) */
+/* game-core.js - pure game logic (no DOM) */
 window.BCGameCore = (function () {
   "use strict";
 

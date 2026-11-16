@@ -1,4 +1,4 @@
-/* quiz.js — Learn page quiz: 8 questions, xu rewards */
+/* quiz.js - Learn page quiz: 8 questions, xu rewards */
 window.BCQuiz = (function () {
   "use strict";
 

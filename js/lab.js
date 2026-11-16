@@ -1,4 +1,4 @@
-/* lab.js — probability simulator (logic + boot) */
+/* lab.js - probability simulator (logic + boot) */
 window.BCLab = (function () {
   "use strict";
 

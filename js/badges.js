@@ -1,4 +1,4 @@
-/* badges.js — 8 achievements, unlock + toast */
+/* badges.js - 8 achievements, unlock + toast */
 window.BCBadges = (function () {
   "use strict";
 
@@ -18,7 +18,7 @@ window.BCBadges = (function () {
     return true;
   }
 
-  /* event hooks — called by game/quiz/lab/wallet flows */
+  /* event hooks - called by game/quiz/lab/wallet flows */
   function check(ev) {
     var st = BCStore.load();
     switch (ev) {

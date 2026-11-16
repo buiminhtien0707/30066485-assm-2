@@ -1,4 +1,4 @@
-/* auth.js — lightweight prototype stub (no backend database).
+/* auth.js - lightweight prototype stub (no backend database).
    Accounts & cloud sync are marked "Coming Soon" in the UI; store.js stays
    in Guest mode ("bc_state_v1") so users play immediately offline. */
 window.BCAuth = (function () {

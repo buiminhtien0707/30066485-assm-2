@@ -1,4 +1,4 @@
-/* store.js — persistence on localStorage (namespaced, versioned)
+/* store.js - persistence on localStorage (namespaced, versioned)
    CHANGED for accounts: the key is no longer fixed. Guests keep the old key
    "bc_state_v1"; a signed-in user gets "bc_state_v1__<userId>", so every
    account has its own balance, badges, stats and history.
@@ -14,7 +14,7 @@ window.BCStore = (function () {
   var DEFAULTS = {
     v: 1, lang: "en", muted: false,
     balance: 1000, lastLiXi: "", lastVisit: "",
-    rounds: [],            // [{dice:[i,i,i], net:int}] — last 10
+    rounds: [],            // [{dice:[i,i,i], net:int}]: last 10
     stats: { played: 0, won: 0, lost: 0, streak: 0, bestStreak: 0, peak: 1000 },
     badges: [], bestQuiz: 0, seenAnimals: [],
     coachDone: false, letters: []

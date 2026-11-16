@@ -1,4 +1,4 @@
-/* game.js — Play page controller: board, chips, shake/reveal/settle */
+/* game.js - Play page controller: board, chips, shake/reveal/settle */
 window.BCGame = (function () {
   "use strict";
 

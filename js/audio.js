@@ -1,4 +1,4 @@
-/* audio.js — synthesized sound effects (Web Audio API, no audio files)
+/* audio.js - synthesized sound effects (Web Audio API, no audio files)
    Sounds: rattle (dice), chip (place), win, lose, pop (UI), drum (lì xì)  */
 window.BCAudio = (function () {
   "use strict";

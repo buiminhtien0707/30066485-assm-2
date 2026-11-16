@@ -1,4 +1,4 @@
-/* i18n.js — language switching (en default, vn, zh) */
+/* i18n.js - language switching (en default, vn, zh) */
 window.BCi18n = (function () {
   "use strict";
   var DICTS = {
