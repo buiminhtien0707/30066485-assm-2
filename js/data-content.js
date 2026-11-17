@@ -4,12 +4,12 @@ window.BC_CONTENT = (function () {
 
   var QUIZ = [
     {
-      q: { vn: "Bầu cua tôm cá gốc từ trò chơi nào?", en: "Bầu cua tôm cá originated from which game?", zh: "越南骰宝源自哪个游戏？" },
+      q: { vn: "Bầu cua tôm cá gốc từ trò chơi nào?", en: "Bau cua tom ca originated from which game?", zh: "越南骰宝源自哪个游戏？" },
       opts: [
         { vn: "Hoo Hey How (Trung Quốc)", en: "Hoo Hey How (China)", zh: "Hoo Hey How（中国）" },
         { vn: "Sicbo(Hồng Kông)", en: "Sicbo (Hong Kong)", zh: "骰宝（香港）" },
         { vn: "Cờ cá ngựa", en: "Horse chess", zh: "赛马棋" },
-        { vn: "Xổ số Tết", en: "Tết lottery", zh: "春节彩票" }
+        { vn: "Xổ số Tết", en: "Tet lottery", zh: "春节彩票" }
       ],
       a: 0,
       why: { vn: "Chính xác: trò đi biển vào Nam Bộ từ Hoo Hey How.", en: "Correct: it sailed south from Hoo Hey How.", zh: "正确：它从 Hoo Hey How 南传而来。" }
@@ -59,7 +59,7 @@ window.BC_CONTENT = (function () {
       why: { vn: "Hươu: gần âm “lộc” nên được chọn.", en: "Deer: chosen for its pun on “fortune”.", zh: "鹿：谐音“禄”，故被选用。" }
     },
     {
-      q: { vn: "“Lì xì” trên site là gì?", en: "What is “lì xì” here?", zh: "这里的“利是”是什么？" },
+      q: { vn: "“Lì xì” trên site là gì?", en: "What is “li xi” here?", zh: "这里的“利是”是什么？" },
       opts: [
         { vn: "Thưởng xu ảo mỗi ngày", en: "A daily virtual-coin bonus", zh: "每日虚拟金币奖励" },
         { vn: "Nạp tiền thật", en: "A real-money deposit", zh: "真实充值" },
@@ -67,7 +67,7 @@ window.BC_CONTENT = (function () {
         { vn: "Thẻ quà tặng", en: "A gift card", zh: "礼品卡" }
       ],
       a: 0,
-      why: { vn: "Lì xì = +500 xu ảo mỗi lần nhận, không tiền thật.", en: "Lì xì = +500 virtual coins per claim, never real money.", zh: "利是 = 每次领取 +500 虚拟金币，绝非真钱。" }
+      why: { vn: "Lì xì = +500 xu ảo mỗi lần nhận, không tiền thật.", en: "Li xi = +500 virtual coins per claim, never real money.", zh: "利是 = 每次领取 +500 虚拟金币，绝非真钱。" }
     },
     {
       q: { vn: "Về dài hạn, người cầm bát thắng thế nào?", en: "In the long run, why does the bowl-keeper win?", zh: "长期来看，庄家为何总是赢？" },
@@ -94,12 +94,12 @@ window.BC_CONTENT = (function () {
   ];
 
   var FAQ = [
-    { q: { vn: "Bầu cua là gì?", en: "What is bầu cua?", zh: "什么是越南骰宝？" },
-      a: { vn: "Trò chơi dân gian chơi ngày Tết: đặt cược lên 6 ô con vật, lắc 3 viên xí ngầu trong bát, ăn theo số con khớp.", en: "A Tết folk game: bet on six animal cells, shake three dice in a bowl, and win by how many dice match your cells.", zh: "春节民间游戏：押六格动物，摇三颗骰子，按命中数赢奖。" } },
+    { q: { vn: "Bầu cua là gì?", en: "What is bau cua?", zh: "什么是越南骰宝？" },
+      a: { vn: "Trò chơi dân gian chơi ngày Tết: đặt cược lên 6 ô con vật, lắc 3 viên xí ngầu trong bát, ăn theo số con khớp.", en: "A Tet folk game: bet on six animal cells, shake three dice in a bowl, and win by how many dice match your cells.", zh: "春节民间游戏：押六格动物，摇三颗骰子，按命中数赢奖。" } },
     { q: { vn: "Trò này có ăn tiền thật không?", en: "Does this game use real money?", zh: "这个游戏用真钱吗？" },
       a: { vn: "Không. Toàn bộ xu trên site là xu ảo: không nạp, không rút.", en: "No. All coins here are virtual: no deposits, no withdrawals.", zh: "不。这里所有金币都是虚拟的：不可充值、不可提现。" } },
-    { q: { vn: "Lì xì là gì?", en: "What is lì xì?", zh: "什么是“利是”？", },
-      a: { vn: "Túi may mắn ngày Tết. Ở đây: nhận +500 xu ảo bất cứ lúc nào để bạn không bao giờ bị chặn khỏi trò chơi.", en: "A Tết lucky red envelope. Here: +500 virtual coins per claim so you're never locked out of play.", zh: "春节红包。这里可随时领取 +500 虚拟金币，绝不让您被挡在游戏之外。" } },
+    { q: { vn: "Lì xì là gì?", en: "What is li xi?", zh: "什么是“利是”？", },
+      a: { vn: "Túi may mắn ngày Tết. Ở đây: nhận +500 xu ảo bất cứ lúc nào để bạn không bao giờ bị chặn khỏi trò chơi.", en: "A Tet lucky red envelope. Here: +500 virtual coins per claim so you're never locked out of play.", zh: "春节红包。这里可随时领取 +500 虚拟金币，绝不让您被挡在游戏之外。" } },
     { q: { vn: "Vì sao nhà cầm bát luôn lãi?", en: "Why does the bowl-keeper profit?", zh: "为什么庄家总赚钱？" },
       a: { vn: "Luật trả thưởng thấp hơn xác suất thật: chênh ≈ 7,9%. Xem Lab để tự chạy 1.000 ván.", en: "Payouts sit below true odds: a gap of about 7.9%. Run 1,000 rounds in the Lab to see it.", zh: "赔率低于真实概率：差距约 7.9%。去实验室跑 1000 局看看。" } },
     { q: { vn: "Chơi trên điện thoại được không?", en: "Can I play on my phone?", zh: "可以用手机玩吗？" },
@@ -110,14 +110,14 @@ window.BC_CONTENT = (function () {
 
   var TIMELINE = [
     { t: { vn: "30 Tết: gói bánh, gói quà", en: "Dec 30 (lunar): wrapping cakes and gifts", zh: "腊月三十：包粽子、备礼" },
-      d: { vn: "Cả nhà quây quần gói bánh chưng, nhà nhà dọn bàn bầu cua ra góc phòng khách.", en: "The family wraps bánh chưng while someone dusts off the bầu cua set in the living-room corner.", zh: "全家包粽子，有人把骰宝套装擦净摆到客厅一角。" } },
+      d: { vn: "Cả nhà quây quần gói bánh chưng, nhà nhà dọn bàn bầu cua ra góc phòng khách.", en: "The family wraps banh chung while someone dusts off the bau cua set in the living-room corner.", zh: "全家包粽子，有人把骰宝套装擦净摆到客厅一角。" } },
     { t: { vn: "Mùng 1 trưa: mâm cỗ", en: "Day 1 noon: the feast", zh: "初一午：年夜饭" },
       d: { vn: "Cỗ xong, bánh in và trà ra bàn; bát bầu cua úp xuống giữa chiếu.", en: "After the feast, sweets and tea hit the table and the bowl lands face-down on the mat.", zh: "宴罢，糕点清茶上桌，骰盅扣在席中央。" } },
     { t: { vn: "Chiều mùng 1: họ hàng tụ bàn", en: "Day 1 afternoon: family gathers", zh: "初一午後：亲邻聚桌" },
       d: { vn: "Chị Hai câu bài, anh Tư dạy luật, thằng bé nhặt xí ngầu rơi dưới chiếu.", en: "Auntie heckles, uncle teaches the rules, the kid retrieves dice from under the mat.", zh: "二姨起哄，三舅教规则，小孩捡滚到席下的骰子。" } },
     { t: { vn: "Ván đầu tiên: khai xuân", en: "The first round: opening luck", zh: "第一局：开春" },
       d: { vn: "Ai cũng đặt một cược nhỏ để “xông đất”: thua vẫn cười.", en: "Everyone tosses a small bet to “break ground luck”: losing still earns a laugh.", zh: "人人下一小注“踩地开运”：输了也笑。" } },
-    { t: { vn: "Trẻ con được lì xì", en: "Kids get their lì xì", zh: "孩子们领利是" },
+    { t: { vn: "Trẻ con được lì xì", en: "Kids get their li xi", zh: "孩子们领利是" },
       d: { vn: "Phong bì đỏ chia tay, vài em mang số tiền mới có vào bàn: và học thua rất ngầu.", en: "Red envelopes go around; a few kids bring their new fortune to the table: and learn to lose with style.", zh: "红包发完，几个孩子带着新钱上桌：学会潇洒地输。" } },
     { t: { vn: "Khóa ván: cùng ăn mứt", en: "Closing the game: sweets and tea", zh: "收盅：茶点收尾" },
       d: { vn: "Người thắng mời mứt, người thua được an ủi bằng trà. Không ai nhớ chính xác ai thắng.", en: "Winners buy the sweets, losers get tea and sympathy. Nobody remembers who actually won.", zh: "赢家请糖，输家得茶与安慰。没人记得究竟谁赢了。" } }

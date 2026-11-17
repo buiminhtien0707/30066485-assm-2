@@ -79,6 +79,10 @@ window.BCPageLearn = (function () {
     return BC_DATA.ANIMALS.filter(function (a) { return a.id === id; })[0];
   }
 
+  function stripVn(s) {
+    return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\u0111/g, "d").replace(/\u0110/g, "D");
+  }
+
   function renderAnimals(zone) {
     var st = BCStore.load();
     var seenList = st.seenAnimals || [];
@@ -267,7 +271,9 @@ window.BCPageLearn = (function () {
     }
 
     var modal = document.querySelector("#modal-animal");
-    var seenCount = (BCStore.load().seenAnimals || []).length;
+    var stCur = BCStore.load();
+    var seenCount = (stCur.seenAnimals || []).length;
+    var vnLabel = (stCur.lang || "en") === "en" ? stripVn(a.name.vn) : a.name.vn;
     modal.querySelector(".box").innerHTML =
       '<div class="close-row" style="justify-content:space-between;align-items:center">' +
         '<span class="seen-pill is-seen">✓ ' + BCi18n.t("learn.seenBadge") + ' (' + seenCount + '/6)</span>' +
@@ -278,7 +284,7 @@ window.BCPageLearn = (function () {
         '<div>' +
           '<h3 style="margin:0 0 4px">' + BCi18n.L(a.name) + '</h3>' +
           '<div class="animal-lang-badges">' +
-            '<span class="animal-lang-pill">VN: ' + a.name.vn + '</span>' +
+            '<span class="animal-lang-pill">VN: ' + vnLabel + '</span>' +
             '<span class="animal-lang-pill">EN: ' + a.name.en + '</span>' +
             '<span class="animal-lang-pill">ZH: ' + a.name.zh + '</span>' +
           '</div>' +

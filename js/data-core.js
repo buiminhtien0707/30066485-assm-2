@@ -68,7 +68,7 @@ window.BC_DATA = (function () {
 
   var BADGES = [
     { id: "khai_xuan", icon: "🧧", name: { vn: "Khai Xuân", en: "First Blessing", zh: "开春" },
-      desc: { vn: "Nhận lì xì đầu tiên", en: "Claim your first lì xì", zh: "领取第一个利是" } },
+      desc: { vn: "Nhận lì xì đầu tiên", en: "Claim your first li xi", zh: "领取第一个利是" } },
     { id: "lac_lu", icon: "🎲", name: { vn: "Lắc Lư", en: "First Shake", zh: "初次摇盅" },
       desc: { vn: "Hoàn thành ván đầu tiên", en: "Finish your first round", zh: "完成第一局" } },
     { id: "thua_vui", icon: "😅", name: { vn: "Thua Vui Vẻ", en: "Good Sport", zh: "输得开心" },
@@ -86,14 +86,14 @@ window.BC_DATA = (function () {
   ];
 
   var LEADER_SAMPLE = [
-    { rank: 1, name: "Chú Tễu", xu: 2450 },
-    { rank: 2, name: "Cô Hoang", xu: 1980 },
-    { rank: 3, name: "Bác Ba", xu: 1610 },
-    { rank: 4, name: "Minh Sú", xu: 1240 },
+    { rank: 1, name: "Chu Teu", xu: 2450 },
+    { rank: 2, name: "Co Hoang", xu: 1980 },
+    { rank: 3, name: "Bac Ba", xu: 1610 },
+    { rank: 4, name: "Minh Su", xu: 1240 },
     { rank: 5, name: "Na Di", xu: 990 }
   ];
 
-  var VIDEO_ID = ''; /* paste a YouTube video ID here to show the Tết page video */
+  var VIDEO_ID = ''; /* paste a YouTube video ID here to show the Tet page video */
 
   return { ANIMALS: ANIMALS, BADGES: BADGES, LEADER_SAMPLE: LEADER_SAMPLE, VIDEO_ID: VIDEO_ID };
 })();
