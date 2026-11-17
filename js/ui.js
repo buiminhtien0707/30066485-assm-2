@@ -109,15 +109,14 @@ window.BCUI = (function () {
     }
     var dz = document.querySelector("#drawer-daily-zone");
     if (dz) {
-      var daysHtml = info.rewards.map(function (amt, i) {
-        var dayNum = i + 1;
-        var cls = "daily-day" + (dayNum === 7 ? " day-7" : "");
-        if (i < info.completed) cls += " done";
-        else if (!info.claimedToday && i === info.completed) cls += " ready";
-        var prefix = i < info.completed ? "✓ " : "";
+      var daysHtml = info.days.map(function (item) {
+        var cls = "daily-day" + (item.isSeventh ? " day-7" : "");
+        if (item.done) cls += " done";
+        else if (item.ready) cls += " ready";
+        var prefix = item.done ? "✓ " : "";
         return '<div class="' + cls + '">' +
-          '<span class="dd-lbl">' + prefix + BCi18n.t("daily.day", { n: dayNum }) + '</span>' +
-          '<span class="dd-amt">+' + amt.toLocaleString("vi-VN") + '</span>' +
+          '<span class="dd-lbl">' + prefix + BCi18n.t("daily.day", { n: item.day }) + '</span>' +
+          '<span class="dd-amt">+' + item.amount.toLocaleString("vi-VN") + '</span>' +
         '</div>';
       }).join("");
       var ctaLabel = info.claimedToday
@@ -129,6 +128,7 @@ window.BCUI = (function () {
             '<span class="daily-title">🎁 ' + BCi18n.t("daily.title") + '</span>' +
             '<span class="daily-streak-pill">' + BCi18n.t("daily.streak", { n: info.completed }) + '</span>' +
           '</div>' +
+          '<p class="daily-sub">' + BCi18n.t("daily.sub") + '</p>' +
           '<div class="daily-grid">' + daysHtml + '</div>' +
           '<button type="button" class="btn-bc btn-sm btn-jade" data-act="daily-claim" style="width:100%"' +
             (info.claimedToday ? ' disabled' : '') + '>' + ctaLabel + '</button>' +

@@ -91,8 +91,13 @@ window.BCWallet = (function () {
     return { net: net, perCell: perCell, matches: matches };
   }
 
-  /* ---------- daily check-in & sandbox demo refill ---------- */
-  var DAILY_REWARDS = [200, 250, 300, 350, 400, 500, 1000];
+  /* ---------- daily check-in (2,000 base + 100/streak) & sandbox demo refill ---------- */
+  var DAILY_BASE = 2000;
+  var DAILY_STEP = 100;
+
+  function rewardForDay(dayNum) {
+    return DAILY_BASE + Math.max(0, dayNum - 1) * DAILY_STEP;
+  }
 
   function localDateStr(d) {
     var dt = d || new Date();
@@ -116,21 +121,32 @@ window.BCWallet = (function () {
     var streakRaw = Number(st.dailyStreak) || 0;
     var completed = 0;
     if (claimedToday) {
-      completed = Math.min(Math.max(streakRaw, 1), 7);
+      completed = Math.max(streakRaw, 1);
     } else if (st.dailyLast === y) {
-      completed = streakRaw >= 7 ? 0 : streakRaw;
+      completed = Math.max(streakRaw, 0);
     }
-    var nextIndex = claimedToday ? completed % 7 : completed;
     var todayDay = claimedToday ? completed : completed + 1;
-    var todayAmount = DAILY_REWARDS[Math.max(0, todayDay - 1)];
+    var todayAmount = rewardForDay(todayDay);
+    var nextAmount = claimedToday ? rewardForDay(completed + 1) : todayAmount;
+    var startDay = Math.floor((todayDay - 1) / 7) * 7 + 1;
+    var days = [];
+    for (var i = 0; i < 7; i++) {
+      var d = startDay + i;
+      days.push({
+        day: d,
+        amount: rewardForDay(d),
+        done: d <= completed,
+        ready: !claimedToday && d === todayDay,
+        isSeventh: i === 6
+      });
+    }
     return {
-      rewards: DAILY_REWARDS.slice(),
+      days: days,
       claimedToday: claimedToday,
       completed: completed,
       todayDay: todayDay,
       todayAmount: todayAmount,
-      nextIndex: nextIndex,
-      nextAmount: DAILY_REWARDS[nextIndex]
+      nextAmount: nextAmount
     };
   }
 
@@ -138,11 +154,11 @@ window.BCWallet = (function () {
     var info = dailyStatus();
     if (info.claimedToday) return { ok: false, amount: 0, day: info.todayDay };
     var st = s();
-    var dayIdx = info.completed;
-    var amt = DAILY_REWARDS[dayIdx];
+    var newDay = info.completed + 1;
+    var amt = rewardForDay(newDay);
     st.balance += amt;
     st.stats.peak = Math.max(st.stats.peak, st.balance);
-    st.dailyStreak = dayIdx + 1;
+    st.dailyStreak = newDay;
     st.dailyLast = today();
     BCStore.save();
     emit();
