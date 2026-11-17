@@ -91,8 +91,64 @@ window.BCWallet = (function () {
     return { net: net, perCell: perCell, matches: matches };
   }
 
-  /* ---------- lì xì: unlimited ---------- */
-  function today() { return new Date().toISOString().slice(0, 10); }
+  /* ---------- daily check-in & sandbox demo refill ---------- */
+  var DAILY_REWARDS = [200, 250, 300, 350, 400, 500, 1000];
+
+  function localDateStr(d) {
+    var dt = d || new Date();
+    var y = dt.getFullYear();
+    var m = String(dt.getMonth() + 1).padStart(2, "0");
+    var day = String(dt.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
+  }
+  function today() { return localDateStr(new Date()); }
+  function yesterday() {
+    var d = new Date();
+    d.setDate(d.getDate() - 1);
+    return localDateStr(d);
+  }
+
+  function dailyStatus() {
+    var st = s();
+    var t = today();
+    var y = yesterday();
+    var claimedToday = st.dailyLast === t;
+    var streakRaw = Number(st.dailyStreak) || 0;
+    var completed = 0;
+    if (claimedToday) {
+      completed = Math.min(Math.max(streakRaw, 1), 7);
+    } else if (st.dailyLast === y) {
+      completed = streakRaw >= 7 ? 0 : streakRaw;
+    }
+    var nextIndex = claimedToday ? completed % 7 : completed;
+    var todayDay = claimedToday ? completed : completed + 1;
+    var todayAmount = DAILY_REWARDS[Math.max(0, todayDay - 1)];
+    return {
+      rewards: DAILY_REWARDS.slice(),
+      claimedToday: claimedToday,
+      completed: completed,
+      todayDay: todayDay,
+      todayAmount: todayAmount,
+      nextIndex: nextIndex,
+      nextAmount: DAILY_REWARDS[nextIndex]
+    };
+  }
+
+  function claimDaily() {
+    var info = dailyStatus();
+    if (info.claimedToday) return { ok: false, amount: 0, day: info.todayDay };
+    var st = s();
+    var dayIdx = info.completed;
+    var amt = DAILY_REWARDS[dayIdx];
+    st.balance += amt;
+    st.stats.peak = Math.max(st.stats.peak, st.balance);
+    st.dailyStreak = dayIdx + 1;
+    st.dailyLast = today();
+    BCStore.save();
+    emit();
+    return { ok: true, amount: amt, day: st.dailyStreak };
+  }
+
   function canClaimLiXi() {
     return true;
   }
@@ -100,6 +156,7 @@ window.BCWallet = (function () {
     var st = s();
     st.balance += 500;
     st.lastLiXi = today();
+    st.stats.peak = Math.max(st.stats.peak, st.balance);
     BCStore.save();
     emit();
     return true;
@@ -120,7 +177,9 @@ window.BCWallet = (function () {
     onChange: onChange, balance: function () { return s().balance; },
     holdTotal: holdTotal, addHold: addHold, removeAnimalHold: removeAnimalHold, undoHold: undoHold, clearHolds: clearHolds,
     commit: commit, settle: settle, rebet: rebet, hasLastBets: function () { return Object.keys(lastBets).length > 0; },
-    canClaimLiXi: canClaimLiXi, claimLiXi: claimLiXi, touchVisit: touchVisit,
+    canClaimLiXi: canClaimLiXi, claimLiXi: claimLiXi,
+    dailyStatus: dailyStatus, claimDaily: claimDaily,
+    touchVisit: touchVisit,
     lastBets: function () { return lastBets; },
     holds: function () { return JSON.parse(JSON.stringify(holds)); },
     MAX_PER_ANIMAL: MAX_PER_ANIMAL

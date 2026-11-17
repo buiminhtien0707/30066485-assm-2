@@ -134,9 +134,15 @@ img{ max-width:100%; }
 .lang-group button + button{ border-left:2px solid var(--ink); }
 .lang-group button.active{ background:var(--jade); color:var(--ink-on-dark); }
 .coin-pill{
-  display:inline-flex; align-items:center; gap:6px;
+  position:relative; display:inline-flex; align-items:center; gap:6px;
   background:var(--gold); border:var(--border); border-radius:999px;
   padding:5px 14px; font-weight:800; font-size:14px; box-shadow:3px 3px 0 var(--ink);
+  cursor:pointer;
+}
+.coin-pill.has-daily::after, .fab.has-daily::after{
+  content:""; position:absolute; top:-4px; right:-4px;
+  width:11px; height:11px; border-radius:50%;
+  background:var(--red); border:2px solid var(--ink);
 }
 .icon-btn{
   border:var(--border); border-radius:10px; background:var(--cream);
@@ -215,6 +221,42 @@ img{ max-width:100%; }
 .drawer.show{ transform:none; }
 .drawer h3{ margin:4px 0 12px; }
 .close-row{ display:flex; justify-content:flex-end; align-items:center; margin-bottom:12px; }
+.daily-card{
+  background:var(--surface); border:var(--border); border-radius:12px;
+  box-shadow:var(--shadow); padding:12px; margin-bottom:12px;
+}
+.daily-head{
+  display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px;
+}
+.daily-title{ font-weight:800; font-size:14px; }
+.daily-streak-pill{
+  font-family:var(--font-mono); font-size:11px; font-weight:800;
+  background:var(--gold); color:var(--ink); border:2px solid var(--ink);
+  border-radius:999px; padding:2px 8px; white-space:nowrap;
+}
+.daily-grid{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:10px;
+}
+.daily-day{
+  border:2px solid var(--ink); border-radius:8px; background:var(--cream);
+  padding:5px 3px; text-align:center; font-family:var(--font-mono); line-height:1.2;
+}
+.daily-day .dd-lbl{ display:block; font-size:10px; font-weight:700; opacity:.75; }
+.daily-day .dd-amt{ display:block; font-size:11px; font-weight:800; margin-top:2px; }
+.daily-day.day-7{ grid-column:span 2; background:var(--paper); }
+.daily-day.done{ background:var(--jade); color:var(--ink-on-dark); }
+.daily-day.done .dd-lbl{ opacity:.9; }
+.daily-day.ready{
+  background:var(--gold); color:var(--ink); box-shadow:2px 2px 0 var(--ink);
+  outline:2px dashed var(--red); outline-offset:1px;
+}
+.demo-topup-card{
+  border:2px dashed var(--ink); border-radius:12px; background:var(--paper);
+  padding:10px 12px; margin-bottom:14px; text-align:center;
+}
+.demo-topup-note{
+  font-family:var(--font-mono); font-size:11px; opacity:.8; margin:0 0 7px;
+}
 
 /* ---------- toast ---------- */
 .toast-zone{ position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:300; display:flex; flex-direction:column; gap:8px; width:min(420px,92vw); }

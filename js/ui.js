@@ -41,13 +41,114 @@ window.BCUI = (function () {
     d.drawer.classList.remove("show");
   }
 
+  function ensureEconomyContainers() {
+    var lixiBtn = document.querySelector(".drawer [data-act=lixi]");
+    if (!lixiBtn) return;
+    if (!document.querySelector("#drawer-daily-zone")) {
+      var dz = document.createElement("div");
+      dz.id = "drawer-daily-zone";
+      lixiBtn.parentNode.insertBefore(dz, lixiBtn);
+    }
+    if (!lixiBtn.closest(".demo-topup-card")) {
+      var demoWrap = document.createElement("div");
+      demoWrap.className = "demo-topup-card";
+      demoWrap.innerHTML = '<p class="demo-topup-note" data-i18n="demo.note"></p>';
+      lixiBtn.parentNode.insertBefore(demoWrap, lixiBtn);
+      demoWrap.appendChild(lixiBtn);
+      if (window.BCi18n) {
+        demoWrap.querySelector(".demo-topup-note").textContent = BCi18n.t("demo.note");
+      }
+    }
+  }
+
+  function bumpCoinPill() {
+    var pill = document.querySelector(".coin-pill");
+    if (pill) {
+      pill.classList.remove("bump");
+      void pill.offsetWidth;
+      pill.classList.add("bump");
+    }
+  }
+
+  function handleDailyClaim(e) {
+    if (e) e.stopPropagation();
+    var res = BCWallet.claimDaily();
+    if (res && res.ok) {
+      BCBadges.check("lixi");
+      BCAudio.drum();
+      BCUI.toast(BCi18n.t("daily.toast", { d: res.day, n: res.amount.toLocaleString("vi-VN") }), "win");
+      renderCoins();
+      bumpCoinPill();
+      renderDrawer();
+    }
+  }
+
+  function handleClaim(e) {
+    if (e) e.stopPropagation();
+    if (BCWallet.claimLiXi()) {
+      BCBadges.check("lixi");
+      BCAudio.drum();
+      BCUI.toast(BCi18n.t("drawer.lixiGot"), "gold");
+      renderCoins();
+      bumpCoinPill();
+      renderDrawer();
+    }
+  }
+
+  function renderDailyUI() {
+    var info = BCWallet.dailyStatus();
+    document.querySelectorAll(".coin-pill, .fab").forEach(function (el) {
+      el.classList.toggle("has-daily", !info.claimedToday);
+    });
+    var playDaily = document.querySelector("#play-daily-btn");
+    if (playDaily) {
+      playDaily.disabled = info.claimedToday;
+      playDaily.textContent = info.claimedToday
+        ? BCi18n.t("daily.playDone")
+        : BCi18n.t("daily.playBtn", { n: info.todayAmount.toLocaleString("vi-VN") });
+    }
+    var dz = document.querySelector("#drawer-daily-zone");
+    if (dz) {
+      var daysHtml = info.rewards.map(function (amt, i) {
+        var dayNum = i + 1;
+        var cls = "daily-day" + (dayNum === 7 ? " day-7" : "");
+        if (i < info.completed) cls += " done";
+        else if (!info.claimedToday && i === info.completed) cls += " ready";
+        var prefix = i < info.completed ? "✓ " : "";
+        return '<div class="' + cls + '">' +
+          '<span class="dd-lbl">' + prefix + BCi18n.t("daily.day", { n: dayNum }) + '</span>' +
+          '<span class="dd-amt">+' + amt.toLocaleString("vi-VN") + '</span>' +
+        '</div>';
+      }).join("");
+      var ctaLabel = info.claimedToday
+        ? BCi18n.t("daily.done", { n: info.nextAmount.toLocaleString("vi-VN") })
+        : BCi18n.t("daily.btn", { d: info.todayDay, n: info.todayAmount.toLocaleString("vi-VN") });
+      dz.innerHTML =
+        '<div class="daily-card">' +
+          '<div class="daily-head">' +
+            '<span class="daily-title">🎁 ' + BCi18n.t("daily.title") + '</span>' +
+            '<span class="daily-streak-pill">' + BCi18n.t("daily.streak", { n: info.completed }) + '</span>' +
+          '</div>' +
+          '<div class="daily-grid">' + daysHtml + '</div>' +
+          '<button type="button" class="btn-bc btn-sm btn-jade" data-act="daily-claim" style="width:100%"' +
+            (info.claimedToday ? ' disabled' : '') + '>' + ctaLabel + '</button>' +
+        '</div>';
+      var btn = dz.querySelector("[data-act=daily-claim]");
+      if (btn) btn.addEventListener("click", handleDailyClaim);
+    }
+  }
+
   function renderDrawer() {
+    ensureEconomyContainers();
+    renderDailyUI();
     var st = BCStore.load();
     var lixiBtn = document.querySelector("[data-act=lixi]");
     if (lixiBtn) {
       lixiBtn.disabled = false;
       lixiBtn.textContent = BCi18n.t("drawer.lixi");
     }
+    var demoNote = document.querySelector(".demo-topup-note");
+    if (demoNote) demoNote.textContent = BCi18n.t("demo.note");
     var list = document.querySelector("#badge-grid");
     if (list) {
       list.innerHTML = "";
@@ -164,21 +265,11 @@ window.BCUI = (function () {
       }
     });
 
-    function handleClaim(e) {
-      if (e) e.stopPropagation();
-      if (BCWallet.claimLiXi()) {
-        BCBadges.check("lixi");
-        BCAudio.drum();
-        BCUI.toast(BCi18n.t("drawer.lixiGot"), "win");
-        var pill = document.querySelector(".coin-pill");
-        if (pill) {
-          pill.classList.remove("bump");
-          void pill.offsetWidth;
-          pill.classList.add("bump");
-        }
-        renderDrawer();
-      }
-    }
+    ensureEconomyContainers();
+    renderDailyUI();
+
+    var playDaily = document.querySelector("#play-daily-btn");
+    if (playDaily) playDaily.addEventListener("click", handleDailyClaim);
 
     var lixiBtn = document.querySelector("[data-act=lixi]");
     if (lixiBtn) {
@@ -186,6 +277,14 @@ window.BCUI = (function () {
     }
     document.querySelectorAll("[data-act=quick-lixi]").forEach(function (btn) {
       btn.addEventListener("click", handleClaim);
+    });
+    BCWallet.onChange(function () {
+      renderCoins();
+      renderDrawer();
+    });
+    BCi18n.onLangChange(function () {
+      renderCoins();
+      renderDrawer();
     });
 
     // active nav link

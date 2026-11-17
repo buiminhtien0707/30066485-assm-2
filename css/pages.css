@@ -770,6 +770,12 @@ body[data-page="play"] .section-head{ gap:4px; margin-bottom:10px; }
 }
 .status-line{ font-family:var(--font-mono); font-weight:700; margin:8px 0 10px; min-height:22px; font-size:14px; }
 .play-actions{ display:flex; gap:10px; flex-wrap:wrap; margin:14px 0 0; }
+.play-wallet-bar{
+  display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+  margin-top:12px; padding:10px 12px;
+  background:var(--cream); border:var(--border); border-radius:12px; box-shadow:var(--shadow);
+}
+.play-wallet-bar .btn-bc{ flex:1 1 180px; }
 .btn-shake{ font-size:18px; padding:10px 26px; margin-top:4px; }
 
 .history-strip{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; min-height:40px; }

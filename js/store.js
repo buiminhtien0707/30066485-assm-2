@@ -14,6 +14,7 @@ window.BCStore = (function () {
   var DEFAULTS = {
     v: 1, lang: "en", muted: false,
     balance: 1000, lastLiXi: "", lastVisit: "",
+    dailyStreak: 0, dailyLast: "",
     rounds: [],            // [{dice:[i,i,i], net:int}]: last 10
     stats: { played: 0, won: 0, lost: 0, streak: 0, bestStreak: 0, peak: 1000 },
     badges: [], bestQuiz: 0, seenAnimals: [],
