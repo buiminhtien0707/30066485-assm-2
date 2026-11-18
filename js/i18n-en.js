@@ -1,5 +1,4 @@
-/* i18n: English */
-window.BC_I18N_EN = {
+window.stringsEn = {
   "nav.home": "Home", "nav.play": "Play", "nav.learn": "Learn", "nav.lab": "Lab", "nav.tet": "Tet",
   "brand.short": "BAU CUA!", "brand.full": "Bau Cua Fun",
   "hero.t1": "BAU CUA", "hero.t2": "TOM CA",

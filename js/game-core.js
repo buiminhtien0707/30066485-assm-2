@@ -1,36 +1,34 @@
-/* game-core.js - pure game logic (no DOM) */
-window.BCGameCore = (function () {
+window.diceMath = (function () {
   "use strict";
 
   var EMOJI = { bau: "🍈", cua: "🦀", tom: "🦐", ca: "🐟", ga: "🐔", huou: "🦌" };
 
   function rollDice() {
-    var ids = ["bau", "cua", "tom", "ca", "ga", "huou"];
+    var faces = ["bau", "cua", "tom", "ca", "ga", "huou"];
     var out = [];
     for (var i = 0; i < 3; i++) {
       if (window.crypto && crypto.getRandomValues) {
-        out.push(ids[crypto.getRandomValues(new Uint32Array(1))[0] % 6]);
+        out.push(faces[crypto.getRandomValues(new Uint32Array(1))[0] % 6]);
       } else {
-        out.push(ids[Math.floor(Math.random() * 6)]);
+        out.push(faces[Math.floor(Math.random() * 6)]);
       }
     }
     return out;
   }
 
-  /* bets: {id: amount}; dice: [id,id,id]
-     payout per cell = stake back + k× prize; net = payout − total stake */
+  // 0 matches loses stake; 1/2/3 matches returns stake plus k*bet
   function evaluate(bets, dice) {
-    var staked = 0, payout = 0, matches = 0;
-    var perCell = {};
+    var totalBet = 0, totalPay = 0, topMatches = 0;
+    var hitsById = {};
     Object.keys(bets).forEach(function (id) {
-      var b = bets[id] || 0;
-      staked += b;
+      var amt = bets[id] || 0;
+      totalBet += amt;
       var k = dice.filter(function (d) { return d === id; }).length;
-      perCell[id] = k;
-      matches = Math.max(matches, k);
-      payout += k === 0 ? 0 : b * (k + 1);   // 0 matches = lose stake
+      hitsById[id] = k;
+      topMatches = Math.max(topMatches, k);
+      totalPay += k === 0 ? 0 : amt * (k + 1);
     });
-    return { staked: staked, payout: payout, net: payout - staked, perCell: perCell, matches: matches };
+    return { staked: totalBet, payout: totalPay, net: totalPay - totalBet, perCell: hitsById, matches: topMatches };
   }
 
   return { EMOJI: EMOJI, rollDice: rollDice, evaluate: evaluate };

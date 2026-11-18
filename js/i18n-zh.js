@@ -1,5 +1,4 @@
-/* i18n - 中文 (Chinese, simplified) */
-window.BC_I18N_ZH = {
+window.stringsZh = {
   "nav.home": "首页", "nav.play": "玩", "nav.learn": "学", "nav.lab": "实验室", "nav.tet": "春节",
   "brand.short": "骰宝!", "brand.full": "欢乐骰宝",
   "hero.t1": "鱼虾蟹", "hero.t2": "春节骰宝",

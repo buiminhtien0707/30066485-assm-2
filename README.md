@@ -1,75 +1,33 @@
-# 🎲 BẦU CUA VUI
+# Bau Cua Vui
 
-Website văn hóa–giải trí về **bầu cua tôm cá** — trò chơi Tết dân gian Việt Nam.
-Học luật trong 30 giây, chơi bằng **xu ảo 100%** (không nạp, không rút, không tiền thật), soi xác suất ở Lab.
+Bau Cua Vui is an interactive cultural and probability web prototype built around the Vietnamese Tet tabletop game of bau cua tom ca. Every round runs strictly on virtual coins (no real-money deposits, bets, or cash withdrawals). Live hosted demo: https://buiminhtien0707.github.io/
 
-🔗 **Bản live:** https://buiminhtien0707.github.io/
+## Running Offline
 
----
-
-## ▶️ Chạy local (chọn 1 trong 2 cách)
-
-### Cách 1 — Mở thẳng (dễ nhất)
-
-1. Tải/clone thư mục này về máy
-2. **Double-click vào file `HomePage.html`** (hoặc `index.html`)
-3. Chạy ngay trên trình duyệt — **không cần cài đặt gì cả**
-
-### Cách 2 — Chạy qua local server (nếu cách 1 có vấn đề)
-
-Cần có [Python](https://www.python.org/downloads/) hoặc VS Code:
+1. Unzip or clone the project folder.
+2. Open `HomePage.html` (or `index.html`) directly in any modern browser.
+3. Optional local server check from the `site/` folder:
 
 ```bash
-# Python (macOS/Linux/Windows)
-cd site
 python3 -m http.server 8000
-# mở trình duyệt → http://localhost:8000
 ```
 
-Hoặc trong VS Code: cài extension **Live Server** → chuột phải `index.html` → *Open with Live Server*.
+All dependencies (Bootstrap v5.3.3, 21 WOFF2 font files plus `fonts.css`, and SVG/PNG mascot artwork) are bundled locally under relative paths, so offline browsing behaves identically to GitHub Pages.
 
-> Website chạy 100% offline — mọi thư viện (Bootstrap), font chữ, ảnh đều nằm sẵn trong thư mục, không cần internet.
+## Pages Included
 
----
+- `HomePage.html`: Entry redirect into `index.html`.
+- `index.html`: Introduction, interactive 30-second play preview, six-animal carousel, and FAQ accordion.
+- `play.html`: Chip bar (`10`, `50`, `100`, `500`), `3x2` animal board (`max 500 coins/cell`), shakeable crock reveal, `?` rules popup, and sample rankings.
+- `learn.html`: Learning mastery tracker, interactive Payout Sandbox calculator, filterable six-animal cultural guide, comparison table against Hoo Hey How, and an 8-question coin quiz.
+- `lab.html`: Client-side Monte Carlo simulator (`100` or `1,000` rounds, `1` vs `3` cell strategy) with dual HTML5 Canvas charts demonstrating the long-term `-7.87%` house edge.
+- `tet.html`: Six-scene cultural timeline, zero-gambling note, and validated feedback form.
 
-## 📄 Các trang
+## Key Prototype Behaviors
 
-| Trang | File | Làm gì |
-|-------|------|--------|
-| 🏠 Trang chủ | `index.html` | Giới thiệu + hướng dẫn 30 giây + 6 con vật + FAQ |
-| 🎮 Chơi | `play.html` | Bàn bầu cua ảo: đặt chip → LẮC! → ăn/thua bằng xu ảo |
-| 📖 Học | `learn.html` | Ý nghĩa 6 con vật, nguồn gốc, luật chơi + quiz đổi xu |
-| 🧪 Lab | `lab.html` | Mô phỏng 100/1.000 ván — thấy vì sao nhà cầm bát luôn lãi nhẹ |
-| 🧧 Tết | `tet.html` | Chuyện ngày Tết với bầu cua + chơi có trách nhiệm |
+- **Guest Play & Coin Pouch**: Starts offline in Guest mode via `localStorage` (`bc_state_v1`). Players can claim a 7-day Daily Check-In streak (`2,000` base coins plus `+100` coins per consecutive streak day) or top up anytime using the unlimited `+500 coins (demo)` button.
+- **Account Preview (`Coming Soon`)**: Clicking `Sign in` opens a UI preview (`Full Name`, `Email`, `Phone`, `Password`) that clearly indicates backend storage is not connected in this prototype.
+- **Trilingual Support**: Live switching between Vietnamese (`VN`), English (`EN`, using unaccented Vietnamese cultural terms for clarity), and Simplified Chinese (`ZH`), persisted locally.
+- **Web Audio & Canvas**: Synthesized sound cues (`js/audio.js`) and Monte Carlo charts (`js/lab-charts.js`) run purely through browser APIs without external media files or charting libraries.
 
-## ✨ Tính năng
-
-- Đặt cược chip 10/50/100/500 — undo, xóa, đặt lại ván trước
-- "Lì xì" +500 xu không giới hạn từ Túi xu (hết xu vẫn chơi tiếp được — không dead-end)
-- 8 huy hiệu thu thập, thống kê cá nhân trong **Túi xu** (nút góc phải)
-- Tài khoản cục bộ tùy chọn (tên + linh vật + mã PIN 4–6 số băm PBKDF2): chơi ngay như Khách hoặc tạo hồ sơ riêng để tự quản lý số xu, huy hiệu, bảng xếp hạng trên máy và xuất/nhập file lưu `.json`
-- 3 ngôn ngữ: **VN / EN / ZH** (chuyển ở góc trên phải)
-- Âm thanh tổng hợp trực tiếp bằng Web Audio (không file nhạc)
-- Lưu tiến trình tự động (localStorage) — chạy 100% offline không cần backend
-
-## 🛠️ Công nghệ
-
-- HTML5 + CSS3 + JavaScript thuần (không framework, không build tool)
-- [Bootstrap 5.3](https://getbootstrap.com) (grid — file local)
-- Font: Baloo 2 ExtraBold (tiêu đề), Be Vietnam Pro (nội dung), Space Mono (self-hosted woff2)
-- Minh họa 6 con vật: vector vẽ theo phong cách mặt bàn bầu cua (không dùng ảnh chụp)
-- Deploy: GitHub Pages
-
-## 📝 Cập nhật code rồi đẩy lên
-
-```bash
-git add .
-git commit -m "mô tả thay đổi"
-git push
-```
-
-Push xong GitHub Pages tự cập nhật sau ~1 phút.
-
----
-
-⚠️ **Lưu ý:** Toàn bộ xu trên website là xu ảo, chỉ để giải trí và học văn hóa. Không có bất kỳ hình thức nạp/rút tiền thật nào.
+Note: All coins and leaderboard scores are virtual and exist solely for classroom evaluation and numeracy exploration.

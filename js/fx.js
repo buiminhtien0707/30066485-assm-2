@@ -1,95 +1,92 @@
-/* fx.js - game juice: confetti, screen shake, number count-up.
-   All effects collapse to no-ops under prefers-reduced-motion. */
-window.BCFx = (function () {
+window.anim = (function () {
   "use strict";
 
-  function reduced() { return BCUI.reducedMotion(); }
+  var palette = ["#C7361F", "#FFC93C", "#274C77", "#FAF3E7"];
 
-  /* ---------- confetti burst (brand palette, canvas, self-cleaning) ---------- */
-  var COLORS = ["#C7361F", "#FFC93C", "#0F5E59", "#FAF3E7"];
+  function isReduced() {
+    return appShell.reducedMotion();
+  }
 
   function confetti(big) {
-    if (reduced()) return;
-    var c = document.createElement("canvas");
-    c.className = "confetti-canvas";
-    c.setAttribute("aria-hidden", "true");
+    if (isReduced()) return;
+    var cvs = document.createElement("canvas");
+    cvs.className = "confetti-canvas";
+    cvs.setAttribute("aria-hidden", "true");
     var dpr = window.devicePixelRatio || 1;
-    c.width = window.innerWidth * dpr;
-    c.height = window.innerHeight * dpr;
-    document.body.appendChild(c);
-    var g = c.getContext("2d");
-    g.scale(dpr, dpr);
+    cvs.width = window.innerWidth * dpr;
+    cvs.height = window.innerHeight * dpr;
+    document.body.appendChild(cvs);
+    var ctx = cvs.getContext("2d");
+    ctx.scale(dpr, dpr);
 
-    var W = window.innerWidth, H = window.innerHeight;
-    var originY = H * 0.42;
-    var count = big ? 90 : 45;
-    var parts = [];
-    for (var i = 0; i < count; i++) {
-      var angle = Math.random() * Math.PI - Math.PI;      /* upward fan */
-      var speed = (big ? 9 : 6) + Math.random() * (big ? 7 : 4);
-      parts.push({
-        x: W / 2, y: originY,
-        vx: Math.cos(angle) * speed * 2.2,
-        vy: Math.sin(angle) * speed,
+    var w = window.innerWidth, h = window.innerHeight;
+    var y0 = h * 0.42;
+    var total = big ? 90 : 45;
+    var bits = [];
+    for (var i = 0; i < total; i++) {
+      var ang = Math.random() * Math.PI - Math.PI;
+      var spd = (big ? 9 : 6) + Math.random() * (big ? 7 : 4);
+      bits.push({
+        x: w / 2, y: y0,
+        vx: Math.cos(ang) * spd * 2.2,
+        vy: Math.sin(ang) * spd,
         w: 5 + Math.random() * 6,
         h: 8 + Math.random() * 8,
         rot: Math.random() * Math.PI,
         vr: (Math.random() - 0.5) * 0.3,
-        color: COLORS[i % COLORS.length]
+        color: palette[i % palette.length]
       });
     }
 
-    var t0 = null, LIFE = 1500;
-    function frame(ts) {
-      if (!t0) t0 = ts;
-      var t = ts - t0;
-      g.clearRect(0, 0, W, H);
-      for (var i = 0; i < parts.length; i++) {
-        var p = parts[i];
-        p.vy += 0.32;                     /* gravity */
-        p.x += p.vx; p.y += p.vy;
-        p.vx *= 0.985;
-        p.rot += p.vr;
-        g.save();
-        g.translate(p.x, p.y);
-        g.rotate(p.rot);
-        g.globalAlpha = Math.max(0, 1 - t / LIFE);
-        g.fillStyle = p.color;
-        g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-        g.restore();
+    var startTs = null, duration = 1500;
+    function step(ts) {
+      if (!startTs) startTs = ts;
+      var dt = ts - startTs;
+      ctx.clearRect(0, 0, w, h);
+      for (var i = 0; i < bits.length; i++) {
+        var b = bits[i];
+        b.vy += 0.32;
+        b.x += b.vx; b.y += b.vy;
+        b.vx *= 0.985;
+        b.rot += b.vr;
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(b.rot);
+        ctx.globalAlpha = Math.max(0, 1 - dt / duration);
+        ctx.fillStyle = b.color;
+        ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
+        ctx.restore();
       }
-      if (t < LIFE) requestAnimationFrame(frame);
-      else c.remove();
+      if (dt < duration) requestAnimationFrame(step);
+      else cvs.remove();
     }
-    requestAnimationFrame(frame);
+    requestAnimationFrame(step);
   }
 
-  /* ---------- short shake on an element ---------- */
   function shake(el, cls) {
-    if (reduced() || !el) return;
+    if (isReduced() || !el) return;
     el.classList.remove(cls);
     void el.offsetWidth;
     el.classList.add(cls);
     setTimeout(function () { el.classList.remove(cls); }, 450);
   }
 
-  /* ---------- tween a number inside an element ---------- */
-  function countUp(el, from, to, ms, suffix) {
+  function countUp(el, fromVal, toVal, ms, unit) {
     if (!el) return;
-    if (reduced() || from === to) {
-      el.textContent = to.toLocaleString("vi-VN") + " " + suffix;
+    if (isReduced() || fromVal === toVal) {
+      el.textContent = toVal.toLocaleString("vi-VN") + " " + unit;
       return;
     }
-    var t0 = null;
-    function frame(ts) {
-      if (!t0) t0 = ts;
-      var k = Math.min(1, (ts - t0) / ms);
-      var eased = 1 - Math.pow(1 - k, 3);
-      var v = Math.round(from + (to - from) * eased);
-      el.textContent = v.toLocaleString("vi-VN") + " " + suffix;
-      if (k < 1) requestAnimationFrame(frame);
+    var startTs = null;
+    function step(ts) {
+      if (!startTs) startTs = ts;
+      var p = Math.min(1, (ts - startTs) / ms);
+      var eased = 1 - Math.pow(1 - p, 3);
+      var cur = Math.round(fromVal + (toVal - fromVal) * eased);
+      el.textContent = cur.toLocaleString("vi-VN") + " " + unit;
+      if (p < 1) requestAnimationFrame(step);
     }
-    requestAnimationFrame(frame);
+    requestAnimationFrame(step);
   }
 
   return { confetti: confetti, shake: shake, countUp: countUp };

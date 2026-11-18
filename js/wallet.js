@@ -1,203 +1,212 @@
-/* wallet.js - virtual-coin economy: hold/commit/settle, lì xì, stats */
-window.BCWallet = (function () {
+window.coinBank = (function () {
   "use strict";
 
-  var listeners = [];
-
-  function s() { return BCStore.load(); }
-
-  function emit() { listeners.forEach(function (fn) { fn(); }); }
-  function onChange(fn) { listeners.push(fn); }
-
-  /* ---------- bets (hold until SHAKE commits them) ---------- */
-  var holds = {};
-  var placed = [];      // stack of {id, amt}: undo removes the last placed chip
-  var lastBets = {};
-  var lastStaked = 0;
-  var MAX_PER_ANIMAL = 500;
-
-  function holdTotal() {
-    return Object.keys(holds).reduce(function (a, id) { return a + holds[id]; }, 0);
-  }
-  function addHold(id, amt) {
-    if ((holds[id] || 0) + amt > MAX_PER_ANIMAL) {
-      return { ok: false, reason: "max_bet", max: MAX_PER_ANIMAL };
-    }
-    if (holdTotal() + amt > s().balance) {
-      return { ok: false, reason: "broke" };
-    }
-    holds[id] = (holds[id] || 0) + amt;
-    placed.push({ id: id, amt: amt });
-    return { ok: true };
-  }
-  function removeAnimalHold(id) {
-    if (!holds[id]) return 0;
-    var removed = holds[id];
-    delete holds[id];
-    placed = placed.filter(function (p) { return p.id !== id; });
-    return removed;
-  }
-  function undoHold() {
-    var last = placed.pop();
-    if (!last) return false;
-    holds[last.id] -= last.amt;
-    if (holds[last.id] <= 0) delete holds[last.id];
-    return true;
-  }
-  function clearHolds() { holds = {}; placed = []; }
-  function rememberBets() { lastBets = JSON.parse(JSON.stringify(holds)); }
-  function rebet() {
-    if (!Object.keys(lastBets).length) return false;
-    var total = Object.keys(lastBets).reduce(function (a, id) { return a + lastBets[id]; }, 0);
-    if (total > s().balance) return false;
-    holds = JSON.parse(JSON.stringify(lastBets));
-    return true;
-  }
-
-  /* ---------- round money flow ---------- */
-  function commit() {
-    var staked = holdTotal();
-    lastStaked = staked;
-    s().balance -= staked;
-    rememberBets();
-    clearHolds();
-    BCStore.save();
-    emit();
-    return staked;
-  }
-
-  function settle(dice) {           // dice = [idx,idx,idx] of animal ids
-    var st = s();
-    var payout = 0, matches = 0;
-    var perCell = {};
-    Object.keys(lastBets).forEach(function (id) {
-      var bet = lastBets[id] || 0;
-      if (!bet) return;
-      var k = dice.filter(function (d) { return d === id; }).length;
-      perCell[id] = k;
-      matches = Math.max(matches, k);
-      payout += k === 0 ? 0 : bet * (k + 1);   // 0 matches = lose stake      // stake back + k× prize
-    });
-    st.balance += payout;
-    var net = payout - lastStaked;
-    st.stats.played += 1;
-    if (net > 0) { st.stats.won += 1; st.stats.streak += 1; st.stats.bestStreak = Math.max(st.stats.bestStreak, st.stats.streak); }
-    else if (net < 0) { st.stats.lost += 1; st.stats.streak = 0; }
-    st.rounds.unshift({ dice: dice, net: net });
-    st.rounds = st.rounds.slice(0, 10);
-    st.stats.peak = Math.max(st.stats.peak, st.balance);
-    BCStore.save();
-    emit();
-    return { net: net, perCell: perCell, matches: matches };
-  }
-
-  /* ---------- daily check-in (2,000 base + 100/streak) & sandbox demo refill ---------- */
+  var subs = [];
+  var staged = {};
+  var stack = [];
+  var prevBets = {};
+  var prevStake = 0;
+  var CELL_LIMIT = 500;
   var DAILY_BASE = 2000;
   var DAILY_STEP = 100;
 
-  function rewardForDay(dayNum) {
+  function st() { return saveStore.load(); }
+  function notify() { subs.forEach(function (fn) { fn(); }); }
+  function onChange(fn) { subs.push(fn); }
+
+  function holdTotal() {
+    return Object.keys(staged).reduce(function (sum, id) { return sum + staged[id]; }, 0);
+  }
+
+  function addHold(id, amt) {
+    if ((staged[id] || 0) + amt > CELL_LIMIT) {
+      return { ok: false, reason: "max_bet", max: CELL_LIMIT };
+    }
+    if (holdTotal() + amt > st().balance) {
+      return { ok: false, reason: "broke" };
+    }
+    staged[id] = (staged[id] || 0) + amt;
+    stack.push({ id: id, amt: amt });
+    return { ok: true };
+  }
+
+  function removeAnimalHold(id) {
+    if (!staged[id]) return 0;
+    var amt = staged[id];
+    delete staged[id];
+    stack = stack.filter(function (item) { return item.id !== id; });
+    return amt;
+  }
+
+  function undoHold() {
+    var top = stack.pop();
+    if (!top) return false;
+    staged[top.id] -= top.amt;
+    if (staged[top.id] <= 0) delete staged[top.id];
+    return true;
+  }
+
+  function clearHolds() { staged = {}; stack = []; }
+  function saveBets() { prevBets = JSON.parse(JSON.stringify(staged)); }
+
+  function rebet() {
+    if (!Object.keys(prevBets).length) return false;
+    var sum = Object.keys(prevBets).reduce(function (acc, id) { return acc + prevBets[id]; }, 0);
+    if (sum > st().balance) return false;
+    staged = JSON.parse(JSON.stringify(prevBets));
+    return true;
+  }
+
+  function commit() {
+    var total = holdTotal();
+    prevStake = total;
+    st().balance -= total;
+    saveBets();
+    clearHolds();
+    saveStore.save();
+    notify();
+    return total;
+  }
+
+  function settle(dice) {
+    var data = st();
+    var payout = 0, topHits = 0;
+    var hitsMap = {};
+    Object.keys(prevBets).forEach(function (id) {
+      var bet = prevBets[id] || 0;
+      if (!bet) return;
+      var k = dice.filter(function (d) { return d === id; }).length;
+      hitsMap[id] = k;
+      topHits = Math.max(topHits, k);
+      payout += k === 0 ? 0 : bet * (k + 1);
+    });
+    data.balance += payout;
+    var net = payout - prevStake;
+    data.stats.played += 1;
+    if (net > 0) {
+      data.stats.won += 1;
+      data.stats.streak += 1;
+      data.stats.bestStreak = Math.max(data.stats.bestStreak, data.stats.streak);
+    } else if (net < 0) {
+      data.stats.lost += 1;
+      data.stats.streak = 0;
+    }
+    data.rounds.unshift({ dice: dice, net: net });
+    data.rounds = data.rounds.slice(0, 10);
+    data.stats.peak = Math.max(data.stats.peak, data.balance);
+    saveStore.save();
+    notify();
+    return { net: net, perCell: hitsMap, matches: topHits };
+  }
+
+  function dayReward(dayNum) {
     return DAILY_BASE + Math.max(0, dayNum - 1) * DAILY_STEP;
   }
 
-  function localDateStr(d) {
+  function dayKey(d) {
     var dt = d || new Date();
     var y = dt.getFullYear();
     var m = String(dt.getMonth() + 1).padStart(2, "0");
-    var day = String(dt.getDate()).padStart(2, "0");
-    return y + "-" + m + "-" + day;
+    var dd = String(dt.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + dd;
   }
-  function today() { return localDateStr(new Date()); }
+
+  function today() { return dayKey(new Date()); }
   function yesterday() {
     var d = new Date();
     d.setDate(d.getDate() - 1);
-    return localDateStr(d);
+    return dayKey(d);
   }
 
   function dailyStatus() {
-    var st = s();
+    var data = st();
     var t = today();
     var y = yesterday();
-    var claimedToday = st.dailyLast === t;
-    var streakRaw = Number(st.dailyStreak) || 0;
+    var doneToday = data.dailyLast === t;
+    var streakRaw = Number(data.dailyStreak) || 0;
     var completed = 0;
-    if (claimedToday) {
-      completed = Math.max(streakRaw, 1);
-    } else if (st.dailyLast === y) {
-      completed = Math.max(streakRaw, 0);
-    }
-    var todayDay = claimedToday ? completed : completed + 1;
-    var todayAmount = rewardForDay(todayDay);
-    var nextAmount = claimedToday ? rewardForDay(completed + 1) : todayAmount;
-    var startDay = Math.floor((todayDay - 1) / 7) * 7 + 1;
+    if (doneToday) completed = Math.max(streakRaw, 1);
+    else if (data.dailyLast === y) completed = Math.max(streakRaw, 0);
+
+    var curDay = doneToday ? completed : completed + 1;
+    var todayAmt = dayReward(curDay);
+    var nextAmt = doneToday ? dayReward(completed + 1) : todayAmt;
+    var blockStart = Math.floor((curDay - 1) / 7) * 7 + 1;
     var days = [];
     for (var i = 0; i < 7; i++) {
-      var d = startDay + i;
+      var dNum = blockStart + i;
       days.push({
-        day: d,
-        amount: rewardForDay(d),
-        done: d <= completed,
-        ready: !claimedToday && d === todayDay,
+        day: dNum,
+        amount: dayReward(dNum),
+        done: dNum <= completed,
+        ready: !doneToday && dNum === curDay,
         isSeventh: i === 6
       });
     }
     return {
       days: days,
-      claimedToday: claimedToday,
+      claimedToday: doneToday,
       completed: completed,
-      todayDay: todayDay,
-      todayAmount: todayAmount,
-      nextAmount: nextAmount
+      todayDay: curDay,
+      todayAmount: todayAmt,
+      nextAmount: nextAmt
     };
   }
 
   function claimDaily() {
     var info = dailyStatus();
     if (info.claimedToday) return { ok: false, amount: 0, day: info.todayDay };
-    var st = s();
-    var newDay = info.completed + 1;
-    var amt = rewardForDay(newDay);
-    st.balance += amt;
-    st.stats.peak = Math.max(st.stats.peak, st.balance);
-    st.dailyStreak = newDay;
-    st.dailyLast = today();
-    BCStore.save();
-    emit();
-    return { ok: true, amount: amt, day: st.dailyStreak };
+    var data = st();
+    var nextDay = info.completed + 1;
+    var amt = dayReward(nextDay);
+    data.balance += amt;
+    data.stats.peak = Math.max(data.stats.peak, data.balance);
+    data.dailyStreak = nextDay;
+    data.dailyLast = today();
+    saveStore.save();
+    notify();
+    return { ok: true, amount: amt, day: data.dailyStreak };
   }
 
-  function canClaimLiXi() {
-    return true;
-  }
+  function canClaimLiXi() { return true; }
+
   function claimLiXi() {
-    var st = s();
-    st.balance += 500;
-    st.lastLiXi = today();
-    st.stats.peak = Math.max(st.stats.peak, st.balance);
-    BCStore.save();
-    emit();
+    var data = st();
+    data.balance += 500;
+    data.lastLiXi = today();
+    data.stats.peak = Math.max(data.stats.peak, data.balance);
+    saveStore.save();
+    notify();
     return true;
   }
 
-  /* ---------- return-visit tracking ---------- */
   function touchVisit() {
-    var st = s();
+    var data = st();
     var t = today();
-    if (st.lastVisit && st.lastVisit !== t) {
-      st.stats._prevVisit = st.lastVisit;
-    }
-    st.lastVisit = t;
-    BCStore.save();
+    if (data.lastVisit && data.lastVisit !== t) data.stats._prevVisit = data.lastVisit;
+    data.lastVisit = t;
+    saveStore.save();
   }
 
   return {
-    onChange: onChange, balance: function () { return s().balance; },
-    holdTotal: holdTotal, addHold: addHold, removeAnimalHold: removeAnimalHold, undoHold: undoHold, clearHolds: clearHolds,
-    commit: commit, settle: settle, rebet: rebet, hasLastBets: function () { return Object.keys(lastBets).length > 0; },
-    canClaimLiXi: canClaimLiXi, claimLiXi: claimLiXi,
-    dailyStatus: dailyStatus, claimDaily: claimDaily,
+    onChange: onChange,
+    balance: function () { return st().balance; },
+    holdTotal: holdTotal,
+    addHold: addHold,
+    removeAnimalHold: removeAnimalHold,
+    undoHold: undoHold,
+    clearHolds: clearHolds,
+    commit: commit,
+    settle: settle,
+    rebet: rebet,
+    hasLastBets: function () { return Object.keys(prevBets).length > 0; },
+    canClaimLiXi: canClaimLiXi,
+    claimLiXi: claimLiXi,
+    dailyStatus: dailyStatus,
+    claimDaily: claimDaily,
     touchVisit: touchVisit,
-    lastBets: function () { return lastBets; },
-    holds: function () { return JSON.parse(JSON.stringify(holds)); },
-    MAX_PER_ANIMAL: MAX_PER_ANIMAL
+    lastBets: function () { return prevBets; },
+    holds: function () { return JSON.parse(JSON.stringify(staged)); },
+    MAX_PER_ANIMAL: CELL_LIMIT
   };
 })();

@@ -1,109 +1,107 @@
-/* game.js - Play page controller: board, chips, shake/reveal/settle */
-window.BCGame = (function () {
+window.playTable = (function () {
   "use strict";
 
-  var EMOJI = window.BCGameCore.EMOJI;
-  var state = "IDLE";            // IDLE → SHAKING → IDLE
-  var selectedChip = 100;
-  var pendingTimer = null;
-  var pillFrom = 0;
+  var phase = "IDLE";
+  var chipVal = 100;
+  var shakeTimer = null;
+  var prevBalance = 0;
 
   function $(sel) { return document.querySelector(sel); }
-  function byId(id) {
-    return BC_DATA.ANIMALS.filter(function (a) { return a.id === id; })[0];
+  function findMascot(id) {
+    return gameConfig.MASCOTS.filter(function (a) { return a.id === id; })[0];
   }
 
-  /* ---------- render ---------- */
-  function renderBoard() {
-    var board = $(".board");
-    board.innerHTML = "";
-    BC_DATA.ANIMALS.forEach(function (a, idx) {
-      var b = document.createElement("button");
-      b.className = "cell";
-      b.dataset.animal = a.id;
-      b.setAttribute("aria-label", BCi18n.L(a.name));
-      b.setAttribute("aria-keyshortcuts", String(idx + 1));
-      b.innerHTML =
-        '<span class="name">' + BCi18n.L(a.name) + "</span>" +
-        '<span class="key-hint" aria-hidden="true">[' + (idx + 1) + ']</span>' +
+  function drawGrid() {
+    var grid = $(".board");
+    grid.innerHTML = "";
+    gameConfig.MASCOTS.forEach(function (a, idx) {
+      var cell = document.createElement("button");
+      cell.className = "cell";
+      cell.dataset.animal = a.id;
+      cell.setAttribute("aria-label", lang.L(a.name));
+      cell.setAttribute("aria-keyshortcuts", String(idx + 1));
+      cell.innerHTML =
+        '<span class="name">' + lang.L(a.name) + "</span>" +
+        '<span class="key-hint" aria-hidden="true">[' + (idx + 1) + "]</span>" +
         '<img src="' + a.img + '" alt="">' +
         '<span class="amt"></span>';
-      b.addEventListener("click", function (e) {
+      cell.addEventListener("click", function (e) {
         if (e.target.closest(".amt-del")) {
           e.stopPropagation();
           e.preventDefault();
-          clearAnimalBet(a.id);
+          dropAnimal(a.id);
           return;
         }
-        onCell(a.id);
+        tapCell(a.id);
       });
-      b.addEventListener("contextmenu", function (e) {
+      cell.addEventListener("contextmenu", function (e) {
         e.preventDefault();
-        clearAnimalBet(a.id);
+        dropAnimal(a.id);
       });
-      board.appendChild(b);
+      grid.appendChild(cell);
     });
   }
 
-  function renderChips() {
+  function drawChips() {
     var tray = $(".chip-tray");
     tray.innerHTML = "";
-    [10, 50, 100, 500].forEach(function (v) {
-      var c = document.createElement("button");
-      c.className = "chip" + (v === selectedChip ? " selected" : "");
-      c.dataset.value = v;
-      c.textContent = v;
-      c.setAttribute("aria-label", v + " xu");
-      c.addEventListener("click", function () {
-        selectedChip = v;
-        document.querySelectorAll(".chip").forEach(function (x) {
-          x.classList.toggle("selected", x === c);
+    [10, 50, 100, 500].forEach(function (val) {
+      var chip = document.createElement("button");
+      chip.className = "chip" + (val === chipVal ? " selected" : "");
+      chip.dataset.value = val;
+      chip.textContent = val;
+      chip.setAttribute("aria-label", val + " xu");
+      chip.addEventListener("click", function () {
+        chipVal = val;
+        document.querySelectorAll(".chip").forEach(function (c) {
+          c.classList.toggle("selected", c === chip);
         });
-        BCAudio.chip();
+        sfx.chip();
       });
-      tray.appendChild(c);
+      tray.appendChild(chip);
     });
-    refreshChipAvailability();
+    syncChips();
   }
 
-  function refreshChipAvailability() {
-    var spendable = BCWallet.balance() - BCWallet.holdTotal();
+  function syncChips() {
+    var cashLeft = coinBank.balance() - coinBank.holdTotal();
     document.querySelectorAll(".chip").forEach(function (c) {
-      c.disabled = Number(c.dataset.value) > spendable;
+      c.disabled = Number(c.dataset.value) > cashLeft;
     });
-    var anyChip = document.querySelector(".chip:not(:disabled)");
-    if (anyChip && Number(document.querySelector(".chip.selected").dataset.value) > spendable) {
+    var usableChip = document.querySelector(".chip:not(:disabled)");
+    var pickedEl = document.querySelector(".chip.selected");
+    if (usableChip && pickedEl && Number(pickedEl.dataset.value) > cashLeft) {
       document.querySelectorAll(".chip").forEach(function (c) { c.classList.remove("selected"); });
-      anyChip.classList.add("selected");
-      selectedChip = Number(anyChip.dataset.value);
+      usableChip.classList.add("selected");
+      chipVal = Number(usableChip.dataset.value);
     }
     var undoBtn = $("[data-act=undo]");
-    if (undoBtn) undoBtn.disabled = BCWallet.holdTotal() === 0;
+    if (undoBtn) undoBtn.disabled = coinBank.holdTotal() === 0;
     var clearBtn = $("[data-act=clear]");
-    if (clearBtn) clearBtn.disabled = BCWallet.holdTotal() === 0;
+    if (clearBtn) clearBtn.disabled = coinBank.holdTotal() === 0;
     var rebetBtn = $("[data-act=rebet]");
-    if (rebetBtn) rebetBtn.disabled = !BCWallet.hasLastBets();
+    if (rebetBtn) rebetBtn.disabled = !coinBank.hasLastBets();
   }
 
-  function renderHolds() {
-    var holds = BCWallet.holds();
-    var board = document.querySelector(".board");
-    var anySel = false;
-    document.querySelectorAll(".cell").forEach(function (c) {
-      var id = c.dataset.animal;
-      var amt = holds[id] || 0;
-      var isMax = amt >= BCWallet.MAX_PER_ANIMAL;
-      var sel = amt > 0;
-      if (sel) anySel = true;
-      c.classList.toggle("selected", sel);
-      c.setAttribute("aria-pressed", sel ? "true" : "false");
-      c.classList.toggle("has-bet", amt > 0);
-      c.classList.toggle("is-max-bet", isMax);
-      var amtEl = c.querySelector(".amt");
+  function paintBets() {
+    var staged = coinBank.holds();
+    var grid = document.querySelector(".board");
+    var hasAny = false;
+    document.querySelectorAll(".cell").forEach(function (cell) {
+      var id = cell.dataset.animal;
+      var amt = staged[id] || 0;
+      var hitCap = amt >= coinBank.MAX_PER_ANIMAL;
+      var active = amt > 0;
+      if (active) hasAny = true;
+      cell.classList.toggle("selected", active);
+      cell.setAttribute("aria-pressed", active ? "true" : "false");
+      cell.classList.toggle("has-bet", amt > 0);
+      cell.classList.toggle("is-max-bet", hitCap);
+      var amtEl = cell.querySelector(".amt");
       if (amt > 0) {
         amtEl.innerHTML =
-          '<span class="amt-val">' + amt.toLocaleString("vi-VN") + (isMax ? ' <span class="amt-max">MAX</span>' : '') + '</span>' +
-          '<button type="button" class="amt-del" title="' + BCi18n.t("play.clearAnimalTip") + '" aria-label="' + BCi18n.t("play.clearAnimalTip") + '">✕</button>';
+          '<span class="amt-val">' + amt.toLocaleString("vi-VN") + (hitCap ? ' <span class="amt-max">MAX</span>' : "") + "</span>" +
+          '<button type="button" class="amt-del" title="' + lang.t("play.clearAnimalTip") + '" aria-label="' + lang.t("play.clearAnimalTip") + '">✕</button>';
         amtEl.classList.remove("pop");
         void amtEl.offsetWidth;
         amtEl.classList.add("pop");
@@ -111,339 +109,324 @@ window.BCGame = (function () {
         amtEl.innerHTML = "";
       }
     });
-    if (board) board.classList.toggle("has-selection", anySel);
-    refreshChipAvailability();
+    if (grid) grid.classList.toggle("has-selection", hasAny);
+    syncChips();
   }
 
-  function clearAnimalBet(id) {
-    if (state !== "IDLE") return;
-    var removed = BCWallet.removeAnimalHold(id);
-    if (removed > 0) {
-      BCAudio.pop();
-      var animal = byId(id);
-      BCUI.toast(BCi18n.t("play.clearedAnimal", { name: BCi18n.L(animal.name), n: removed.toLocaleString("vi-VN") }));
-      renderHolds();
+  function dropAnimal(id) {
+    if (phase !== "IDLE") return;
+    var freed = coinBank.removeAnimalHold(id);
+    if (freed > 0) {
+      sfx.pop();
+      var mascot = findMascot(id);
+      appShell.toast(lang.t("play.clearedAnimal", { name: lang.L(mascot.name), n: freed.toLocaleString("vi-VN") }));
+      paintBets();
     }
   }
 
-  /* ---------- round flow ---------- */
-  function onCell(id) {
-    if (state !== "IDLE") return;
-    /* đúng luật truyền thống: cược bao nhiêu ô tùy thích (giới hạn bởi xu + MAX/con) */
-    var res = BCWallet.addHold(id, selectedChip);
+  function tapCell(id) {
+    if (phase !== "IDLE") return;
+    var res = coinBank.addHold(id, chipVal);
     if (!res.ok) {
       if (res.reason === "max_bet") {
-        BCUI.toast(BCi18n.t("play.maxBet", { n: BCWallet.MAX_PER_ANIMAL }), "lose");
-        BCAudio.thud();
+        appShell.toast(lang.t("play.maxBet", { n: coinBank.MAX_PER_ANIMAL }), "lose");
+        sfx.thud();
       } else {
-        BCUI.toast(BCi18n.t("play.broke"), "lose");
+        appShell.toast(lang.t("play.broke"), "lose");
       }
       return;
     }
-    BCAudio.chip();
-    renderHolds();
+    sfx.chip();
+    paintBets();
   }
 
-  function shake() {
-    if (state !== "IDLE") return;
-    if (BCWallet.holdTotal() === 0) {
-      BCUI.toast(BCi18n.t("play.needBet"), "lose");
+  function rollBowl() {
+    if (phase !== "IDLE") return;
+    if (coinBank.holdTotal() === 0) {
+      appShell.toast(lang.t("play.needBet"), "lose");
       return;
     }
-    state = "SHAKING";
-    var reduced = BCUI.reducedMotion();
-    pillFrom = BCWallet.balance();
-    BCWallet.commit();
-    lockBoard(true);
-    setStatus(BCi18n.t("play.statusShake"));
+    phase = "SHAKING";
+    var staticMode = appShell.reducedMotion();
+    prevBalance = coinBank.balance();
+    coinBank.commit();
+    setBusy(true);
+    setStatus(lang.t("play.statusShake"));
     $("[data-act=shake]").disabled = true;
     $("[data-act=rebet]").disabled = true;
 
-    var secs = reduced ? 0.4 : 1.5;
-    BCAudio.rattle(secs);
-    if (!reduced && "vibrate" in navigator) {
+    var secs = staticMode ? 0.4 : 1.5;
+    sfx.rattle(secs);
+    if (!staticMode && "vibrate" in navigator) {
       try { navigator.vibrate([25, 40, 30, 40, 35]); } catch (e) {}
     }
-    var bowl = $(".bowl");
-    bowl.classList.remove("lifted");
-    bowl.classList.add("shaking");
-    pendingTimer = setTimeout(finishRound, secs * 1000);
+    var bowlEl = $(".bowl");
+    bowlEl.classList.remove("lifted");
+    bowlEl.classList.add("shaking");
+    shakeTimer = setTimeout(revealBowl, secs * 1000);
   }
 
-  function finishRound() {
-    pendingTimer = null;
-    var dice = BCGameCore.rollDice();
-    var res = BCWallet.settle(dice);
-    var reduced = BCUI.reducedMotion();
+  function revealBowl() {
+    shakeTimer = null;
+    var dice = diceMath.rollDice();
+    var res = coinBank.settle(dice);
+    var staticMode = appShell.reducedMotion();
 
     var bowlEl = $(".bowl");
     bowlEl.classList.remove("shaking");
     bowlEl.classList.add("lifted");
-    renderDice(dice, reduced ? 0 : 260);
-    highlightWinners(res.perCell, reduced ? 0 : 500);
+    showDice(dice, staticMode ? 0 : 260);
+    flashMatched(res.perCell, staticMode ? 0 : 500);
+
     var msgKey = res.net > 0
       ? (res.matches > 1 ? "play.statusWin" : "play.statusWinOnly")
       : (res.net === 0 ? "play.statusBreak" : "play.statusLose");
-    var msg = BCi18n.t(msgKey, { x: res.matches, n: Math.abs(res.net) });
+    var msg = lang.t(msgKey, { x: res.matches, n: Math.abs(res.net) });
     setStatus(msg);
-    spawnFloat(res.net);
-    bumpPill();
-    if (!reduced && "vibrate" in navigator) {
+    floatDelta(res.net);
+    pulseCoins();
+    if (!staticMode && "vibrate" in navigator) {
       try {
-        if (res.net > 0) {
-          navigator.vibrate(res.matches >= 2 ? [60, 80, 100, 80, 120] : [40, 60, 40]);
-        }
+        if (res.net > 0) navigator.vibrate(res.matches >= 2 ? [60, 80, 100, 80, 120] : [40, 60, 40]);
       } catch (e) {}
     }
-    if (res.net > 0) {
-      BCFx.confetti(res.matches >= 2 || res.net >= 200);
-    } else if (res.net < 0) {
-      BCFx.shake(document.querySelector(".board"), "lose-shake");
-    }
-    BCUI.toast(msg, res.net > 0 ? "win" : (res.net === 0 ? "gold" : "lose"));
-    countPill();
-    updateHistory();
-    renderHolds();
+    if (res.net > 0) anim.confetti(res.matches >= 2 || res.net >= 200);
+    else if (res.net < 0) anim.shake(document.querySelector(".board"), "lose-shake");
+
+    appShell.toast(msg, res.net > 0 ? "win" : (res.net === 0 ? "gold" : "lose"));
+    tweenCoinPill();
+    paintHistory();
+    paintBets();
 
     $("[data-act=shake]").disabled = false;
-    lockBoard(false);
+    setBusy(false);
 
-    BCBadges.check("first_round");
-    BCBadges.check("first_loss");
-    BCBadges.check("streak3");
-    setStatusIdleAfter(2.6);
+    awards.check("first_round");
+    awards.check("first_loss");
+    awards.check("streak3");
+    resetStatusSoon(2.6);
   }
 
-  function countPill() {
-    BCFx.countUp(document.querySelector(".coin-pill span"), pillFrom, BCWallet.balance(), 700, BCi18n.t("unit.xu"));
+  function tweenCoinPill() {
+    anim.countUp(document.querySelector(".coin-pill span"), prevBalance, coinBank.balance(), 700, lang.t("unit.xu"));
   }
 
-  function setStatusIdleAfter(secs) {
+  function resetStatusSoon(secs) {
     setTimeout(function () {
-      if (state === "IDLE") setStatus(BCi18n.t("play.statusIdle"));
+      if (phase === "IDLE") setStatus(lang.t("play.statusIdle"));
     }, secs * 1000);
   }
 
-  function renderDice(dice, delayMs) {
+  function showDice(dice, staggerMs) {
     var row = $(".dice-row");
     row.innerHTML = "";
-    dice.forEach(function (id, i) {
+    dice.forEach(function (id, idx) {
       var die = document.createElement("div");
       die.className = "die";
       var img = document.createElement("img");
       img.src = "assets/img/animals/" + id + ".svg";
-      img.alt = BCi18n.L(byId(id).name);
+      img.alt = lang.L(findMascot(id).name);
       img.width = 42;
       img.height = 42;
       img.style.imageRendering = "pixelated";
       die.appendChild(img);
-      var nm = document.createElement("span");
-      nm.className = "die-name";
-      nm.textContent = BCi18n.L(byId(id).name);
-      die.appendChild(nm);
-      die.setAttribute("aria-label", BCi18n.L(byId(id).name));
-      if (delayMs) {
+      var lbl = document.createElement("span");
+      lbl.className = "die-name";
+      lbl.textContent = lang.L(findMascot(id).name);
+      die.appendChild(lbl);
+      die.setAttribute("aria-label", lang.L(findMascot(id).name));
+      if (staggerMs) {
         setTimeout(function () {
-        row.appendChild(die);
-        BCAudio.clack(520 + i * 140);
-      }, delayMs * i);
+          row.appendChild(die);
+          sfx.clack(520 + idx * 140);
+        }, staggerMs * idx);
       } else {
         row.appendChild(die);
       }
     });
   }
 
-  function highlightWinners(perCell, delayMs) {
+  function flashMatched(hitsMap, delayMs) {
     setTimeout(function () {
       document.querySelectorAll(".cell").forEach(function (c) {
-        var k = perCell[c.dataset.animal] || 0;
+        var k = hitsMap[c.dataset.animal] || 0;
         c.classList.toggle("win-flash", k > 0);
       });
       setTimeout(function () {
-        document.querySelectorAll(".cell").forEach(function (c) {
-          c.classList.remove("win-flash");
-        });
+        document.querySelectorAll(".cell").forEach(function (c) { c.classList.remove("win-flash"); });
       }, 2200);
     }, delayMs);
   }
 
-  function updateHistory() {
-    var st = BCStore.load();
-    var zone = $(".history-strip");
-    zone.innerHTML = "";
-    if (!st.rounds.length) {
-      zone.innerHTML = '<span class="mut">' + BCi18n.t("play.historyEmpty") + "</span>";
+  function paintHistory() {
+    var data = saveStore.load();
+    var strip = $(".history-strip");
+    strip.innerHTML = "";
+    if (!data.rounds.length) {
+      strip.innerHTML = '<span class="mut">' + lang.t("play.historyEmpty") + "</span>";
       return;
     }
-    st.rounds.forEach(function (r) {
-      var div = document.createElement("div");
-      div.className = "hist-round";
-      div.innerHTML = r.dice.map(function (id) {
+    data.rounds.forEach(function (r) {
+      var card = document.createElement("div");
+      card.className = "hist-round";
+      card.innerHTML = r.dice.map(function (id) {
         return '<img src="assets/img/animals/' + id + '.svg" width="22" height="22" alt="" style="image-rendering:pixelated;vertical-align:middle;margin:0 2px">';
       }).join("") +
         '<span class="net ' + (r.net > 0 ? "pos" : "neg") + '">' +
         (r.net > 0 ? "+" : "") + r.net + "</span>";
-      zone.appendChild(div);
+      strip.appendChild(card);
     });
   }
 
-  function spawnFloat(net) {
+  function floatDelta(net) {
     var zone = document.querySelector(".bowl-zone");
     if (!zone) return;
     var el = document.createElement("div");
     var cls = net > 0 ? "plus" : (net === 0 ? "zero" : "minus");
     el.className = "float-xu " + cls;
     var key = net > 0 ? "float.plus" : (net === 0 ? "float.zero" : "float.minus");
-    el.textContent = net === 0 ? BCi18n.t(key) : BCi18n.t(key, { n: Math.abs(net).toLocaleString("vi-VN") });
+    el.textContent = net === 0 ? lang.t(key) : lang.t(key, { n: Math.abs(net).toLocaleString("vi-VN") });
     zone.appendChild(el);
     setTimeout(function () { el.remove(); }, 1500);
   }
 
-  function bumpPill() {
+  function pulseCoins() {
     var pill = document.querySelector(".coin-pill");
     if (!pill) return;
     pill.classList.remove("bump");
-    void pill.offsetWidth; /* restart animation */
+    void pill.offsetWidth;
     pill.classList.add("bump");
     setTimeout(function () { pill.classList.remove("bump"); }, 500);
   }
 
   function setStatus(txt) { $(".status-line").textContent = txt; }
 
-  function lockBoard(lock) {
-    state = lock ? "SHAKING" : "IDLE";
-    $(".board").classList.toggle("locked", lock);
+  function setBusy(busy) {
+    phase = busy ? "SHAKING" : "IDLE";
+    $(".board").classList.toggle("locked", busy);
   }
 
-  /* ---------- boot ---------- */
   function boot() {
-    renderBoard(); renderChips(); updateHistory();
-    setStatus(BCi18n.t("play.statusIdle"));
-    $("[data-act=shake]").addEventListener("click", shake);
+    drawGrid(); drawChips(); paintHistory();
+    setStatus(lang.t("play.statusIdle"));
+    $("[data-act=shake]").addEventListener("click", rollBowl);
     $("[data-act=undo]").addEventListener("click", function () {
-      if (state !== "IDLE") return;
-      BCWallet.undoHold();
-      renderHolds();
-      BCAudio.chip();
+      if (phase !== "IDLE") return;
+      coinBank.undoHold();
+      paintBets();
+      sfx.chip();
     });
     $("[data-act=clear]").addEventListener("click", function () {
-      if (state !== "IDLE") return;
-      BCWallet.clearHolds();
-      renderHolds();
+      if (phase !== "IDLE") return;
+      coinBank.clearHolds();
+      paintBets();
     });
     $("[data-act=rebet]").addEventListener("click", function () {
-      if (state !== "IDLE") return;
-      if (BCWallet.rebet()) { renderHolds(); BCAudio.chip(); }
-      else BCUI.toast(BCi18n.t("play.broke"), "lose");
+      if (phase !== "IDLE") return;
+      if (coinBank.rebet()) { paintBets(); sfx.chip(); }
+      else appShell.toast(lang.t("play.broke"), "lose");
     });
-    // tap the bowl zone to skip the shake animation
+
+    // tap bowl stage to skip shake wait time
     $(".bowl-zone").addEventListener("click", function () {
-      if (pendingTimer) { clearTimeout(pendingTimer); finishRound(); }
+      if (shakeTimer) { clearTimeout(shakeTimer); revealBowl(); }
     });
 
     document.addEventListener("keydown", function (e) {
       if (e.target && e.target.matches && (e.target.matches("input, textarea, select") || e.target.isContentEditable)) return;
-      var key = (e.key || "").toLowerCase();
-      if ((e.key === "Enter" || e.code === "Space") && state === "IDLE") {
+      var k = (e.key || "").toLowerCase();
+      if ((e.key === "Enter" || e.code === "Space") && phase === "IDLE") {
         e.preventDefault();
-        shake();
+        rollBowl();
         return;
       }
-      if (state === "IDLE" && e.key >= "1" && e.key <= "6") {
-        var num = parseInt(e.key, 10);
-        if (num >= 1 && num <= BC_DATA.ANIMALS.length) {
+      if (phase === "IDLE" && e.key >= "1" && e.key <= "6") {
+        var idx = parseInt(e.key, 10);
+        if (idx >= 1 && idx <= gameConfig.MASCOTS.length) {
           e.preventDefault();
-          onCell(BC_DATA.ANIMALS[num - 1].id);
+          tapCell(gameConfig.MASCOTS[idx - 1].id);
         }
         return;
       }
-      if (state === "IDLE" && (key === "u" || ((e.ctrlKey || e.metaKey) && key === "z"))) {
+      if (phase === "IDLE" && (k === "u" || ((e.ctrlKey || e.metaKey) && k === "z"))) {
         var uBtn = $("[data-act=undo]");
         if (uBtn && !uBtn.disabled) { e.preventDefault(); uBtn.click(); }
         return;
       }
-      if (state === "IDLE" && key === "c") {
+      if (phase === "IDLE" && k === "c") {
         var cBtn = $("[data-act=clear]");
         if (cBtn && !cBtn.disabled) { e.preventDefault(); cBtn.click(); }
         return;
       }
-      if (state === "IDLE" && key === "r") {
+      if (phase === "IDLE" && k === "r") {
         var rBtn = $("[data-act=rebet]");
         if (rBtn && !rBtn.disabled) { e.preventDefault(); rBtn.click(); }
         return;
       }
-      if (state === "IDLE" && key === "l") {
+      if (phase === "IDLE" && k === "l") {
         e.preventDefault();
         var qBtn = document.querySelector("[data-act=quick-lixi]");
         if (qBtn) qBtn.click();
-        return;
       }
     });
 
-    BCWallet.onChange(function () {
-      refreshChipAvailability();
-    });
-
-    BCi18n.onLangChange(function () {
+    coinBank.onChange(syncChips);
+    lang.onLangChange(function () {
       document.querySelectorAll(".cell .name").forEach(function (el, i) {
-        el.textContent = BCi18n.L(BC_DATA.ANIMALS[i].name);
+        el.textContent = lang.L(gameConfig.MASCOTS[i].name);
       });
-      if (state === "IDLE") setStatus(BCi18n.t("play.statusIdle"));
+      if (phase === "IDLE") setStatus(lang.t("play.statusIdle"));
     });
 
     var helpBtn = document.querySelector("[data-act=help]");
-    if (helpBtn) helpBtn.addEventListener("click", showHelp);
+    if (helpBtn) helpBtn.addEventListener("click", openRules);
 
-    if (!BCStore.load().coachDone) showCoach();
+    if (!saveStore.load().coachDone) openGuide();
   }
 
-  /* FR-38: rules modal, always reachable */
-  function showHelp() {
-    var m = document.querySelector("#modal-help");
-    m.querySelector("#help-box").innerHTML =
-      "<div class=\"close-row\"><button class=\"icon-btn\" data-act=\"help-close\">✕</button></div>" +
-      "<h3>" + BCi18n.t("help.title") + "</h3>" +
-      "<div class=\"steps\">" + step(1, "coach.1") + step(2, "coach.2") + step(3, "coach.3") + "</div>" +
-      "<p><strong>" + BCi18n.t("help.payout") + "</strong></p>" +
+  function stepRow(n, key) {
+    return '<div class="step-row"><span class="n">' + n + "</span><span>" + lang.t(key) + "</span></div>";
+  }
+
+  function openRules() {
+    var modal = document.querySelector("#modal-help");
+    modal.querySelector("#help-box").innerHTML =
+      '<div class="close-row"><button class="icon-btn" data-act="help-close">✕</button></div>' +
+      "<h3>" + lang.t("help.title") + "</h3>" +
+      '<div class="steps">' + stepRow(1, "coach.1") + stepRow(2, "coach.2") + stepRow(3, "coach.3") + "</div>" +
+      "<p><strong>" + lang.t("help.payout") + "</strong></p>" +
       "<ul>" +
-      "<li>" + BCi18n.t("learn.rule.0") + "</li>" +
-      "<li>" + BCi18n.t("learn.rule.1") + "</li>" +
-      "<li>" + BCi18n.t("learn.rule.2") + "</li>" +
-      "<li>" + BCi18n.t("learn.rule.3") + "</li>" +
+      "<li>" + lang.t("learn.rule.0") + "</li>" +
+      "<li>" + lang.t("learn.rule.1") + "</li>" +
+      "<li>" + lang.t("learn.rule.2") + "</li>" +
+      "<li>" + lang.t("learn.rule.3") + "</li>" +
       "</ul>" +
-      "<a class=\"btn-bc btn-sm\" href=\"learn.html\">" + BCi18n.t("help.link") + "</a>";
-    m.classList.add("show");
-    m.onclick = function (e) {
-      if (e.target === m) m.classList.remove("show");
-    };
-    m.querySelector("[data-act=help-close]").addEventListener("click", function () {
-      m.classList.remove("show");
+      '<a class="btn-bc btn-sm" href="learn.html">' + lang.t("help.link") + "</a>";
+    modal.classList.add("show");
+    modal.onclick = function (e) { if (e.target === modal) modal.classList.remove("show"); };
+    modal.querySelector("[data-act=help-close]").addEventListener("click", function () {
+      modal.classList.remove("show");
     });
   }
 
-  /* ---------- first-visit coach marks ---------- */
-  function showCoach() {
-    var d = document.createElement("div");
-    d.className = "coach";
-    d.innerHTML =
+  function openGuide() {
+    var wrap = document.createElement("div");
+    wrap.className = "coach";
+    wrap.innerHTML =
       '<div class="box card-bc">' +
-      "<h3>" + BCi18n.t("coach.t") + "</h3>" +
+      "<h3>" + lang.t("coach.t") + "</h3>" +
       '<div class="steps">' +
-      step(1, "coach.1") + step(2, "coach.2") + step(3, "coach.3") +
+      stepRow(1, "coach.1") + stepRow(2, "coach.2") + stepRow(3, "coach.3") +
       "</div>" +
-      '<button class="btn-bc btn-gold" data-act="coach-ok">' + BCi18n.t("coach.btn") + "</button>" +
+      '<button class="btn-bc btn-gold" data-act="coach-ok">' + lang.t("coach.btn") + "</button>" +
       "</div>";
-    document.body.appendChild(d);
-    d.querySelector("[data-act=coach-ok]").addEventListener("click", function () {
-      BCStore.load().coachDone = true;
-      BCStore.save();
-      d.remove();
-      BCAudio.pop();
+    document.body.appendChild(wrap);
+    wrap.querySelector("[data-act=coach-ok]").addEventListener("click", function () {
+      saveStore.load().coachDone = true;
+      saveStore.save();
+      wrap.remove();
+      sfx.pop();
     });
-  }
-
-  function step(n, key) {
-    return '<div class="step-row"><span class="n">' + n + "</span><span>" + BCi18n.t(key) + "</span></div>";
   }
 
   return { boot: boot };

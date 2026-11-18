@@ -1,5 +1,4 @@
-/* i18n: Vietnamese (default language) */
-window.BC_I18N_VN = {
+window.stringsVn = {
   "nav.home": "Trang chủ", "nav.play": "Chơi", "nav.learn": "Học", "nav.lab": "Lab", "nav.tet": "Tết",
   "brand.short": "BẦU CUA!", "brand.full": "Bầu Cua Vui",
   "hero.t1": "BẦU CUA", "hero.t2": "TÔM CÁ",

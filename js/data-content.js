@@ -1,8 +1,7 @@
-/* Quiz, FAQ, timeline content: trilingual (vn/en/zh) */
-window.BC_CONTENT = (function () {
+window.studyData = (function () {
   "use strict";
 
-  var QUIZ = [
+  var quizItems = [
     {
       q: { vn: "Bầu cua tôm cá gốc từ trò chơi nào?", en: "Bau cua tom ca originated from which game?", zh: "越南骰宝源自哪个游戏？" },
       opts: [
@@ -93,7 +92,7 @@ window.BC_CONTENT = (function () {
     }
   ];
 
-  var FAQ = [
+  var faqItems = [
     { q: { vn: "Bầu cua là gì?", en: "What is bau cua?", zh: "什么是越南骰宝？" },
       a: { vn: "Trò chơi dân gian chơi ngày Tết: đặt cược lên 6 ô con vật, lắc 3 viên xí ngầu trong bát, ăn theo số con khớp.", en: "A Tet folk game: bet on six animal cells, shake three dice in a bowl, and win by how many dice match your cells.", zh: "春节民间游戏：押六格动物，摇三颗骰子，按命中数赢奖。" } },
     { q: { vn: "Trò này có ăn tiền thật không?", en: "Does this game use real money?", zh: "这个游戏用真钱吗？" },
@@ -108,7 +107,7 @@ window.BC_CONTENT = (function () {
       a: { vn: "Không bắt buộc: vào là chơi ngay ở chế độ Khách, hoặc tạo hồ sơ cục bộ trên máy (tên + mã PIN) để giữ riêng số xu và huy hiệu.", en: "Not required: play immediately as a Guest, or create an optional local profile on your device (name + PIN) to keep your own coins and badges.", zh: "非强制：可直接以游客身份畅玩，也可在此设备上创建本地档案（名称 + PIN 码）来单独保存金币和徽章。" } }
   ];
 
-  var TIMELINE = [
+  var tetScenes = [
     { t: { vn: "30 Tết: gói bánh, gói quà", en: "Dec 30 (lunar): wrapping cakes and gifts", zh: "腊月三十：包粽子、备礼" },
       d: { vn: "Cả nhà quây quần gói bánh chưng, nhà nhà dọn bàn bầu cua ra góc phòng khách.", en: "The family wraps banh chung while someone dusts off the bau cua set in the living-room corner.", zh: "全家包粽子，有人把骰宝套装擦净摆到客厅一角。" } },
     { t: { vn: "Mùng 1 trưa: mâm cỗ", en: "Day 1 noon: the feast", zh: "初一午：年夜饭" },
@@ -123,5 +122,5 @@ window.BC_CONTENT = (function () {
       d: { vn: "Người thắng mời mứt, người thua được an ủi bằng trà. Không ai nhớ chính xác ai thắng.", en: "Winners buy the sweets, losers get tea and sympathy. Nobody remembers who actually won.", zh: "赢家请糖，输家得茶与安慰。没人记得究竟谁赢了。" } }
   ];
 
-  return { QUIZ: QUIZ, FAQ: FAQ, TIMELINE: TIMELINE };
+  return { QUIZ: quizItems, FAQ: faqItems, TIMELINE: tetScenes };
 })();

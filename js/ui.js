@@ -1,17 +1,17 @@
-/* ui.js - global chrome: nav, drawer, toasts, lang, sound, coin pill, stats */
-window.BCUI = (function () {
+window.appShell = (function () {
   "use strict";
+
+  var ICON_COIN = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#B8860B" stroke="#141414" stroke-width="2"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="#141414" stroke-width="1.6"/></svg>';
 
   function reducedMotion() {
     return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
 
-  /* ---------- toast ---------- */
-  function toast(msg, cls) {
+  function toast(msg, kind) {
     var zone = document.querySelector(".toast-zone");
     if (!zone) return;
     var el = document.createElement("div");
-    el.className = "toast-bc" + (cls ? " " + cls : "");
+    el.className = "toast-bc" + (kind ? " " + kind : "");
     el.setAttribute("role", "status");
     el.textContent = msg;
     zone.appendChild(el);
@@ -21,82 +21,82 @@ window.BCUI = (function () {
     }, 2600);
   }
 
-  /* ---------- drawer ---------- */
-  function drawerEls() {
+  function getDrawerEls() {
     return {
       backdrop: document.querySelector(".drawer-backdrop"),
       drawer: document.querySelector(".drawer")
     };
   }
+
   function openDrawer() {
-    var d = drawerEls();
-    d.backdrop.classList.add("show");
-    d.drawer.classList.add("show");
-    renderDrawer();
-    BCAudio.pop();
-  }
-  function closeDrawer() {
-    var d = drawerEls();
-    d.backdrop.classList.remove("show");
-    d.drawer.classList.remove("show");
+    var els = getDrawerEls();
+    els.backdrop.classList.add("show");
+    els.drawer.classList.add("show");
+    paintDrawer();
+    sfx.pop();
   }
 
-  function ensureEconomyContainers() {
-    var lixiBtn = document.querySelector(".drawer [data-act=lixi]");
-    if (!lixiBtn) return;
+  function closeDrawer() {
+    var els = getDrawerEls();
+    els.backdrop.classList.remove("show");
+    els.drawer.classList.remove("show");
+  }
+
+  function setupWalletZones() {
+    var demoBtn = document.querySelector(".drawer [data-act=lixi]");
+    if (!demoBtn) return;
     if (!document.querySelector("#drawer-daily-zone")) {
-      var dz = document.createElement("div");
-      dz.id = "drawer-daily-zone";
-      lixiBtn.parentNode.insertBefore(dz, lixiBtn);
+      var slot = document.createElement("div");
+      slot.id = "drawer-daily-zone";
+      demoBtn.parentNode.insertBefore(slot, demoBtn);
     }
-    if (!lixiBtn.closest(".demo-topup-card")) {
-      var demoWrap = document.createElement("div");
-      demoWrap.className = "demo-topup-card";
-      demoWrap.innerHTML = '<p class="demo-topup-note" data-i18n="demo.note"></p>';
-      lixiBtn.parentNode.insertBefore(demoWrap, lixiBtn);
-      demoWrap.appendChild(lixiBtn);
-      if (window.BCi18n) {
-        demoWrap.querySelector(".demo-topup-note").textContent = BCi18n.t("demo.note");
+    if (!demoBtn.closest(".demo-topup-card")) {
+      var box = document.createElement("div");
+      box.className = "demo-topup-card";
+      box.innerHTML = '<p class="demo-topup-note" data-i18n="demo.note"></p>';
+      demoBtn.parentNode.insertBefore(box, demoBtn);
+      box.appendChild(demoBtn);
+      if (window.lang) {
+        box.querySelector(".demo-topup-note").textContent = lang.t("demo.note");
       }
     }
   }
 
-  function bumpCoinPill() {
+  function pulseCoinPill() {
     var pill = document.querySelector(".coin-pill");
-    if (pill) {
-      pill.classList.remove("bump");
-      void pill.offsetWidth;
-      pill.classList.add("bump");
-    }
+    if (!pill) return;
+    pill.classList.remove("bump");
+    void pill.offsetWidth;
+    pill.classList.add("bump");
   }
 
-  function handleDailyClaim(e) {
+  function onDailyClick(e) {
     if (e) e.stopPropagation();
-    var res = BCWallet.claimDaily();
-    if (res && res.ok) {
-      BCBadges.check("lixi");
-      BCAudio.drum();
-      BCUI.toast(BCi18n.t("daily.toast", { d: res.day, n: res.amount.toLocaleString("vi-VN") }), "win");
+    var out = coinBank.claimDaily();
+    if (out && out.ok) {
+      awards.check("lixi");
+      sfx.drum();
+      appShell.toast(lang.t("daily.toast", { d: out.day, n: out.amount.toLocaleString("vi-VN") }), "win");
       renderCoins();
-      bumpCoinPill();
-      renderDrawer();
+      pulseCoinPill();
+      paintDrawer();
     }
   }
 
-  function handleClaim(e) {
+  function onDemoRefill(e) {
     if (e) e.stopPropagation();
-    if (BCWallet.claimLiXi()) {
-      BCBadges.check("lixi");
-      BCAudio.drum();
-      BCUI.toast(BCi18n.t("drawer.lixiGot"), "gold");
+    if (coinBank.claimLiXi()) {
+      awards.check("lixi");
+      sfx.drum();
+      appShell.toast(lang.t("drawer.lixiGot"), "gold");
       renderCoins();
-      bumpCoinPill();
-      renderDrawer();
+      pulseCoinPill();
+      paintDrawer();
     }
   }
 
-  function renderDailyUI() {
-    var info = BCWallet.dailyStatus();
+  function paintDailyCard() {
+    var info = coinBank.dailyStatus();
     document.querySelectorAll(".coin-pill, .fab").forEach(function (el) {
       el.classList.toggle("has-daily", !info.claimedToday);
     });
@@ -104,141 +104,140 @@ window.BCUI = (function () {
     if (playDaily) {
       playDaily.disabled = info.claimedToday;
       playDaily.textContent = info.claimedToday
-        ? BCi18n.t("daily.playDone")
-        : BCi18n.t("daily.playBtn", { n: info.todayAmount.toLocaleString("vi-VN") });
+        ? lang.t("daily.playDone")
+        : lang.t("daily.playBtn", { n: info.todayAmount.toLocaleString("vi-VN") });
     }
-    var dz = document.querySelector("#drawer-daily-zone");
-    if (dz) {
-      var daysHtml = info.days.map(function (item) {
-        var cls = "daily-day" + (item.isSeventh ? " day-7" : "");
-        if (item.done) cls += " done";
-        else if (item.ready) cls += " ready";
-        var prefix = item.done ? "✓ " : "";
+    var zone = document.querySelector("#drawer-daily-zone");
+    if (zone) {
+      var daysMarkup = info.days.map(function (d) {
+        var cls = "daily-day" + (d.isSeventh ? " day-7" : "");
+        if (d.done) cls += " done";
+        else if (d.ready) cls += " ready";
+        var tick = d.done ? "✓ " : "";
         return '<div class="' + cls + '">' +
-          '<span class="dd-lbl">' + prefix + BCi18n.t("daily.day", { n: item.day }) + '</span>' +
-          '<span class="dd-amt">+' + item.amount.toLocaleString("vi-VN") + '</span>' +
-        '</div>';
+          '<span class="dd-lbl">' + tick + lang.t("daily.day", { n: d.day }) + "</span>" +
+          '<span class="dd-amt">+' + d.amount.toLocaleString("vi-VN") + "</span>" +
+        "</div>";
       }).join("");
-      var ctaLabel = info.claimedToday
-        ? BCi18n.t("daily.done", { n: info.nextAmount.toLocaleString("vi-VN") })
-        : BCi18n.t("daily.btn", { d: info.todayDay, n: info.todayAmount.toLocaleString("vi-VN") });
-      dz.innerHTML =
+      var label = info.claimedToday
+        ? lang.t("daily.done", { n: info.nextAmount.toLocaleString("vi-VN") })
+        : lang.t("daily.btn", { d: info.todayDay, n: info.todayAmount.toLocaleString("vi-VN") });
+      zone.innerHTML =
         '<div class="daily-card">' +
           '<div class="daily-head">' +
-            '<span class="daily-title">🎁 ' + BCi18n.t("daily.title") + '</span>' +
-            '<span class="daily-streak-pill">' + BCi18n.t("daily.streak", { n: info.completed }) + '</span>' +
-          '</div>' +
-          '<p class="daily-sub">' + BCi18n.t("daily.sub") + '</p>' +
-          '<div class="daily-grid">' + daysHtml + '</div>' +
-          '<button type="button" class="btn-bc btn-sm btn-jade" data-act="daily-claim" style="width:100%"' +
-            (info.claimedToday ? ' disabled' : '') + '>' + ctaLabel + '</button>' +
-        '</div>';
-      var btn = dz.querySelector("[data-act=daily-claim]");
-      if (btn) btn.addEventListener("click", handleDailyClaim);
+            '<span class="daily-title">🎁 ' + lang.t("daily.title") + "</span>" +
+            '<span class="daily-streak-pill">' + lang.t("daily.streak", { n: info.completed }) + "</span>" +
+          "</div>" +
+          '<p class="daily-sub">' + lang.t("daily.sub") + "</p>" +
+          '<div class="daily-grid">' + daysMarkup + "</div>" +
+          '<button type="button" class="btn-bc btn-sm btn-accent" data-act="daily-claim" style="width:100%"' +
+            (info.claimedToday ? " disabled" : "") + ">" + label + "</button>" +
+        "</div>";
+      var btn = zone.querySelector("[data-act=daily-claim]");
+      if (btn) btn.addEventListener("click", onDailyClick);
     }
   }
 
-  function renderDrawer() {
-    ensureEconomyContainers();
-    renderDailyUI();
-    var st = BCStore.load();
-    var lixiBtn = document.querySelector("[data-act=lixi]");
-    if (lixiBtn) {
-      lixiBtn.disabled = false;
-      lixiBtn.textContent = BCi18n.t("drawer.lixi");
+  function statHtml(k, v) {
+    return '<div><span class="mut">' + lang.t(k) + ":</span> <strong>" + v + "</strong></div>";
+  }
+
+  function paintDrawer() {
+    setupWalletZones();
+    paintDailyCard();
+    var data = saveStore.load();
+    var demoBtn = document.querySelector("[data-act=lixi]");
+    if (demoBtn) {
+      demoBtn.disabled = false;
+      demoBtn.textContent = lang.t("drawer.lixi");
     }
     var demoNote = document.querySelector(".demo-topup-note");
-    if (demoNote) demoNote.textContent = BCi18n.t("demo.note");
-    var list = document.querySelector("#badge-grid");
-    if (list) {
-      list.innerHTML = "";
-      BC_DATA.BADGES.forEach(function (b) {
-        var unlocked = st.badges.indexOf(b.id) !== -1;
-        var div = document.createElement("div");
-        div.className = "badge-cell " + (unlocked ? "unlocked" : "locked");
-        div.textContent = BCi18n.L(b.name);
+    if (demoNote) demoNote.textContent = lang.t("demo.note");
+
+    var badgeGrid = document.querySelector("#badge-grid");
+    if (badgeGrid) {
+      badgeGrid.innerHTML = "";
+      gameConfig.AWARDS.forEach(function (b) {
+        var unlocked = data.badges.indexOf(b.id) !== -1;
+        var cell = document.createElement("div");
+        cell.className = "badge-cell " + (unlocked ? "unlocked" : "locked");
+        cell.textContent = lang.L(b.name);
         var ic = document.createElement("span");
         ic.className = "ic"; ic.textContent = b.icon;
-        div.prepend(ic);
-        div.title = BCi18n.L(b.desc);
-        list.appendChild(div);
+        cell.prepend(ic);
+        cell.title = lang.L(b.desc);
+        badgeGrid.appendChild(cell);
       });
     }
-    var stats = document.querySelector("#drawer-stats");
-    if (stats) {
-      stats.innerHTML =
-        stat("drawer.played", st.stats.played) +
-        stat("drawer.streak", st.stats.streak) +
-        stat("drawer.best", st.stats.bestStreak) +
-        stat("drawer.peak", st.stats.peak);
+
+    var statsEl = document.querySelector("#drawer-stats");
+    if (statsEl) {
+      statsEl.innerHTML =
+        statHtml("drawer.played", data.stats.played) +
+        statHtml("drawer.streak", data.stats.streak) +
+        statHtml("drawer.best", data.stats.bestStreak) +
+        statHtml("drawer.peak", data.stats.peak);
     }
   }
-  function stat(k, v) {
-    return "<div><span class=\"mut\">" + BCi18n.t(k) + ":</span> <strong>" + v + "</strong></div>";
-  }
 
-  /* ---------- coin pill ---------- */
-  var ICON_COIN = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#B8860B" stroke="#141414" stroke-width="2"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="#141414" stroke-width="1.6"/></svg>';
   function renderCoins() {
     var pill = document.querySelector(".coin-pill");
-    if (pill) pill.innerHTML = ICON_COIN + "<span>" + BCWallet.balance().toLocaleString("vi-VN") + " " + BCi18n.t("unit.xu") + "</span>";
+    if (pill) pill.innerHTML = ICON_COIN + "<span>" + coinBank.balance().toLocaleString("vi-VN") + " " + lang.t("unit.xu") + "</span>";
   }
 
-  /* ---------- lang + sound ---------- */
-  function wireLang() {
+  function bindLangButtons() {
     document.querySelectorAll(".lang-group button").forEach(function (b) {
       b.addEventListener("click", function () {
-        BCi18n.setLang(b.dataset.lang);
-        BCAudio.pop();
+        lang.setLang(b.dataset.lang);
+        sfx.pop();
       });
     });
   }
-  function wireSound() {
+
+  function bindMuteButtons() {
     var btns = document.querySelectorAll("[data-act=sound]");
     if (!btns.length) return;
-    function paint() {
-      var muted = BCStore.load().muted;
+    function syncIcon() {
+      var muted = saveStore.load().muted;
       btns.forEach(function (btn) { btn.classList.toggle("muted", muted); });
     }
     btns.forEach(function (btn) {
       btn.addEventListener("click", function () {
-        var s = BCStore.load();
-        s.muted = !s.muted;
-        BCStore.save();
-        paint();
-        BCAudio.pop();
+        var data = saveStore.load();
+        data.muted = !data.muted;
+        saveStore.save();
+        syncIcon();
+        sfx.pop();
       });
     });
-    paint();
+    syncIcon();
   }
 
-  /* ---------- boot (every page) ---------- */
   function boot() {
-    BCWallet.touchVisit();
-    BCBadges.check("return_visit");
+    coinBank.touchVisit();
+    awards.check("return_visit");
 
-    // inject mobile menu tools if not present
-    var links = document.querySelector(".bc-links");
-    if (links && !links.querySelector(".mobile-menu-tools")) {
-      var mobileTools = document.createElement("div");
-      mobileTools.className = "mobile-menu-tools";
-      mobileTools.innerHTML =
+    var navLinks = document.querySelector(".bc-links");
+    if (navLinks && !navLinks.querySelector(".mobile-menu-tools")) {
+      var bar = document.createElement("div");
+      bar.className = "mobile-menu-tools";
+      bar.innerHTML =
         '<div class="lang-group" role="group" aria-label="Language">' +
         '<button data-lang="vn">VN</button>' +
         '<button data-lang="en">EN</button>' +
         '<button data-lang="zh">ZH</button>' +
-        '</div>' +
+        "</div>" +
         '<button class="icon-btn" data-act="sound" aria-label="Sound">' +
         '<svg class="ic-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" stroke="none"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>' +
         '<svg class="ic-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" stroke="none"/><path d="M16 9l5 6M21 9l-5 6"/></svg>' +
-        '</button>';
-      links.appendChild(mobileTools);
+        "</button>";
+      navLinks.appendChild(bar);
     }
 
-    if (window.BCAccountUI) BCAccountUI.boot();
-    BCi18n.apply();
-    wireLang();
-    wireSound();
+    if (window.loginModal) loginModal.boot();
+    lang.apply();
+    bindLangButtons();
+    bindMuteButtons();
     renderCoins();
 
     document.querySelectorAll("[data-act=drawer-open]").forEach(function (b) {
@@ -247,12 +246,9 @@ window.BCUI = (function () {
     document.querySelector("[data-act=drawer-close]").addEventListener("click", closeDrawer);
     document.querySelector(".drawer-backdrop").addEventListener("click", closeDrawer);
 
-    // Close any modal when clicking backdrop outside .box
     document.querySelectorAll(".modal-bc").forEach(function (m) {
       m.addEventListener("click", function (e) {
-        if (e.target === m) {
-          m.classList.remove("show");
-        }
+        if (e.target === m) m.classList.remove("show");
       });
     });
 
@@ -265,78 +261,69 @@ window.BCUI = (function () {
       }
     });
 
-    ensureEconomyContainers();
-    renderDailyUI();
+    setupWalletZones();
+    paintDailyCard();
 
     var playDaily = document.querySelector("#play-daily-btn");
-    if (playDaily) playDaily.addEventListener("click", handleDailyClaim);
+    if (playDaily) playDaily.addEventListener("click", onDailyClick);
 
-    var lixiBtn = document.querySelector("[data-act=lixi]");
-    if (lixiBtn) {
-      lixiBtn.addEventListener("click", handleClaim);
-    }
+    var demoBtn = document.querySelector("[data-act=lixi]");
+    if (demoBtn) demoBtn.addEventListener("click", onDemoRefill);
     document.querySelectorAll("[data-act=quick-lixi]").forEach(function (btn) {
-      btn.addEventListener("click", handleClaim);
-    });
-    BCWallet.onChange(function () {
-      renderCoins();
-      renderDrawer();
-    });
-    BCi18n.onLangChange(function () {
-      renderCoins();
-      renderDrawer();
+      btn.addEventListener("click", onDemoRefill);
     });
 
-    // active nav link
-    var page = document.body.dataset.page;
+    var curPage = document.body.dataset.page;
     document.querySelectorAll(".bc-links a").forEach(function (a) {
-      a.classList.toggle("active", a.dataset.page === page);
+      a.classList.toggle("active", a.dataset.page === curPage);
     });
-    // mobile menu
-    var tg = document.querySelector(".nav-toggle");
-    var links = document.querySelector(".bc-links");
-    var HAMBURGER_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.6"/></svg>';
+
+    var menuBtn = document.querySelector(".nav-toggle");
+    var MENU_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2.6"/></svg>';
     var CLOSE_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M6 18L18 6" stroke="currentColor" stroke-width="2.6"/></svg>';
 
-    function closeNav() {
-      if (!links || !links.classList.contains("open")) return;
-      links.classList.remove("open");
-      if (tg) {
-        tg.setAttribute("aria-expanded", "false");
-        tg.innerHTML = HAMBURGER_SVG;
+    function closeMenu() {
+      if (!navLinks || !navLinks.classList.contains("open")) return;
+      navLinks.classList.remove("open");
+      if (menuBtn) {
+        menuBtn.setAttribute("aria-expanded", "false");
+        menuBtn.innerHTML = MENU_SVG;
       }
     }
 
-    if (tg && links) {
-      tg.addEventListener("click", function (e) {
+    if (menuBtn && navLinks) {
+      menuBtn.addEventListener("click", function (e) {
         e.stopPropagation();
-        var isOpen = links.classList.toggle("open");
-        tg.setAttribute("aria-expanded", String(isOpen));
-        tg.innerHTML = isOpen ? CLOSE_SVG : HAMBURGER_SVG;
+        var open = navLinks.classList.toggle("open");
+        menuBtn.setAttribute("aria-expanded", String(open));
+        menuBtn.innerHTML = open ? CLOSE_SVG : MENU_SVG;
       });
 
       document.addEventListener("click", function (e) {
-        if (!tg.contains(e.target) && !links.contains(e.target)) {
-          closeNav();
-        }
+        if (!menuBtn.contains(e.target) && !navLinks.contains(e.target)) closeMenu();
       });
 
       document.addEventListener("keydown", function (e) {
-        if (e.key === "Escape") closeNav();
+        if (e.key === "Escape") closeMenu();
       });
 
-      links.querySelectorAll("a").forEach(function (a) {
-        a.addEventListener("click", closeNav);
+      navLinks.querySelectorAll("a").forEach(function (a) {
+        a.addEventListener("click", closeMenu);
       });
     }
 
-    BCWallet.onChange(function () { renderCoins(); renderDrawer(); });
-    BCi18n.onLangChange(function () { renderCoins(); renderDrawer(); });
-    renderDrawer();
+    coinBank.onChange(function () { renderCoins(); paintDrawer(); });
+    lang.onLangChange(function () { renderCoins(); paintDrawer(); });
+    paintDrawer();
   }
 
   return {
-    boot: boot, toast: toast, openDrawer: openDrawer, closeDrawer: closeDrawer,
-    renderCoins: renderCoins, renderDrawer: renderDrawer, reducedMotion: reducedMotion
+    boot: boot,
+    toast: toast,
+    openDrawer: openDrawer,
+    closeDrawer: closeDrawer,
+    renderCoins: renderCoins,
+    renderDrawer: paintDrawer,
+    reducedMotion: reducedMotion
   };
 })();

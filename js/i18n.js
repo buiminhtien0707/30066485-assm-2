@@ -1,57 +1,60 @@
-/* i18n.js - language switching (en default, vn, zh) */
-window.BCi18n = (function () {
+window.lang = (function () {
   "use strict";
-  var DICTS = {
-    vn: window.BC_I18N_VN, en: window.BC_I18N_EN, zh: window.BC_I18N_ZH
+  var dicts = {
+    vn: window.stringsVn,
+    en: window.stringsEn,
+    zh: window.stringsZh
   };
-  var listeners = [];
+  var subs = [];
 
-  function lang() { return (window.BCStore && BCStore.load().lang) || "en"; }
+  function current() {
+    return (window.saveStore && saveStore.load().lang) || "en";
+  }
 
-  function t(key, vars) {
-    var d = DICTS[lang()] || DICTS.en || DICTS.vn;
-    var s = d[key] !== undefined ? d[key] : (DICTS.en && DICTS.en[key] !== undefined ? DICTS.en[key] : (DICTS.vn && DICTS.vn[key] !== undefined ? DICTS.vn[key] : key));
+  function str(key, vars) {
+    var d = dicts[current()] || dicts.en || dicts.vn;
+    var out = d[key] !== undefined ? d[key] : (dicts.en && dicts.en[key] !== undefined ? dicts.en[key] : (dicts.vn && dicts.vn[key] !== undefined ? dicts.vn[key] : key));
     if (vars) {
       Object.keys(vars).forEach(function (k) {
-        s = s.split("{" + k + "}").join(String(vars[k]));
+        out = out.split("{" + k + "}").join(String(vars[k]));
       });
     }
-    return s;
+    return out;
   }
 
-  function L(obj) { /* pick field from a {vn,en,zh} object */
+  function pick(obj) {
     if (obj == null) return "";
-    return obj[lang()] !== undefined ? obj[lang()] : (obj.en || obj.vn || "");
+    return obj[current()] !== undefined ? obj[current()] : (obj.en || obj.vn || "");
   }
 
-  function apply() {
-    document.documentElement.lang = lang() === "zh" ? "zh-CN" : (lang() === "vn" ? "vi" : "en");
+  function translateDom() {
+    document.documentElement.lang = current() === "zh" ? "zh-CN" : (current() === "vn" ? "vi" : "en");
     var page = document.body.dataset.page;
-    if (page) document.title = t("brand.full") + ": " + t("nav." + page);
+    if (page) document.title = str("brand.full") + ": " + str("nav." + page);
     document.querySelectorAll("[data-i18n]").forEach(function (el) {
-      el.textContent = t(el.getAttribute("data-i18n"));
+      el.textContent = str(el.getAttribute("data-i18n"));
     });
     document.querySelectorAll("[data-i18n-aria]").forEach(function (el) {
-      el.setAttribute("aria-label", t(el.getAttribute("data-i18n-aria")));
+      el.setAttribute("aria-label", str(el.getAttribute("data-i18n-aria")));
     });
     document.querySelectorAll("[data-i18n-ph]").forEach(function (el) {
-      el.setAttribute("placeholder", t(el.getAttribute("data-i18n-ph")));
+      el.setAttribute("placeholder", str(el.getAttribute("data-i18n-ph")));
     });
     document.querySelectorAll(".lang-group button").forEach(function (b) {
-      b.classList.toggle("active", b.dataset.lang === lang());
+      b.classList.toggle("active", b.dataset.lang === current());
     });
-    listeners.forEach(function (fn) { fn(lang()); });
+    subs.forEach(function (fn) { fn(current()); });
   }
 
-  function setLang(l) {
-    var s = BCStore.load();
-    s.lang = l;
+  function setLang(code) {
+    var st = saveStore.load();
+    st.lang = code;
     try { localStorage.setItem("bc_lang_user_chosen", "true"); } catch (e) {}
-    BCStore.save();
-    apply();
+    saveStore.save();
+    translateDom();
   }
 
-  function onLangChange(fn) { listeners.push(fn); }
+  function watch(fn) { subs.push(fn); }
 
-  return { t: t, L: L, apply: apply, setLang: setLang, onLangChange: onLangChange, lang: lang };
+  return { t: str, L: pick, apply: translateDom, setLang: setLang, onLangChange: watch, lang: current };
 })();

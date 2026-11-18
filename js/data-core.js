@@ -1,9 +1,7 @@
-/* Animals, badges, sample leaderboard for BẦU CUA VUI.
-   Faces: vector SVG tiles drawn for this project */
-window.BC_DATA = (function () {
+window.gameConfig = (function () {
   "use strict";
 
-  var ANIMALS = [
+  var mascots = [
     {
       id: "bau", img: "assets/img/animals/bau.svg",
       name: { vn: "Bầu", en: "Gourd", zh: "葫芦" },
@@ -66,7 +64,7 @@ window.BC_DATA = (function () {
     }
   ];
 
-  var BADGES = [
+  var awards = [
     { id: "khai_xuan", icon: "🧧", name: { vn: "Khai Xuân", en: "First Blessing", zh: "开春" },
       desc: { vn: "Nhận lì xì đầu tiên", en: "Claim your first li xi", zh: "领取第一个利是" } },
     { id: "lac_lu", icon: "🎲", name: { vn: "Lắc Lư", en: "First Shake", zh: "初次摇盅" },
@@ -85,7 +83,7 @@ window.BC_DATA = (function () {
       desc: { vn: "Quay lại vào ngày hôm sau", en: "Come back the next day", zh: "次日再来" } }
   ];
 
-  var LEADER_SAMPLE = [
+  var sampleScores = [
     { rank: 1, name: "Chu Teu", xu: 2450 },
     { rank: 2, name: "Co Hoang", xu: 1980 },
     { rank: 3, name: "Bac Ba", xu: 1610 },
@@ -93,7 +91,7 @@ window.BC_DATA = (function () {
     { rank: 5, name: "Na Di", xu: 990 }
   ];
 
-  var VIDEO_ID = ''; /* paste a YouTube video ID here to show the Tet page video */
+  var clipId = ''; // optional youtube id for tet page embed
 
-  return { ANIMALS: ANIMALS, BADGES: BADGES, LEADER_SAMPLE: LEADER_SAMPLE, VIDEO_ID: VIDEO_ID };
+  return { MASCOTS: mascots, AWARDS: awards, LEADERBOARD: sampleScores, VIDEO_ID: clipId };
 })();

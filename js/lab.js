@@ -1,110 +1,83 @@
-/* lab.js - probability simulator (logic + boot) */
-window.BCLab = (function () {
+window.simLab = (function () {
   "use strict";
 
-  var cells = 1, rounds = 100, speed = "slow", running = false;
-  var matchCounts = [0, 0, 0, 0];
-  var series = [1000];
-  var stakedTotal = 0;
-
-  function $(sel) { return document.querySelector(sel); }
+  var pickMode = 1, totalRuns = 100, pace = "slow", busy = false;
+  var hitBins = [0, 0, 0, 0];
+  var bankSeries = [1000];
+  var wagerSum = 0;
 
   function boot() {
     if (!document.querySelector("#lab-root")) return;
-    document.querySelectorAll('input[name="cells"]').forEach(function (r) {
-      r.addEventListener("change", function () { cells = Number(r.value); });
+    document.querySelectorAll('input[name="cells"]').forEach(function (inp) {
+      inp.addEventListener("change", function () { pickMode = Number(inp.value); });
     });
-    document.querySelectorAll('input[name="rounds"]').forEach(function (r) {
-      r.addEventListener("change", function () { rounds = Number(r.value); });
+    document.querySelectorAll('input[name="rounds"]').forEach(function (inp) {
+      inp.addEventListener("change", function () { totalRuns = Number(inp.value); });
     });
-    document.querySelectorAll('input[name="speed"]').forEach(function (r) {
-      r.addEventListener("change", function () { speed = r.value; });
-      if (r.checked) speed = r.value;
+    document.querySelectorAll('input[name="speed"]').forEach(function (inp) {
+      inp.addEventListener("change", function () { pace = inp.value; });
+      if (inp.checked) pace = inp.value;
     });
-    document.querySelector("[data-act=lab-run]").addEventListener("click", run);
-    BCi18n.onLangChange(function () { BCLabCharts.draw(matchCounts, series); });
+    document.querySelector("[data-act=lab-run]").addEventListener("click", startSim);
+    lang.onLangChange(function () { simCanvas.draw(hitBins, bankSeries); });
   }
   document.addEventListener("DOMContentLoaded", boot);
 
-  function run() {
-    if (running) return;
-    running = true;
+  function startSim() {
+    if (busy) return;
+    busy = true;
     var done = 0;
-    matchCounts = [0, 0, 0, 0];
-    series = [1000];
-    stakedTotal = 0;
+    hitBins = [0, 0, 0, 0];
+    bankSeries = [1000];
+    wagerSum = 0;
     var coins = 1000;
-    var runBtn = document.querySelector("[data-act=lab-run]");
-    if (runBtn) runBtn.disabled = true;
+    var btn = document.querySelector("[data-act=lab-run]");
+    if (btn) btn.disabled = true;
 
-    function stepOne() {
-      var dice = BCGameCore.rollDice();
-      var bets = {};
-      if (cells === 1) {
-        bets.bau = 100;
-      } else {
-        bets.bau = 100; bets.cua = 100; bets.tom = 100;
-      }
-      var r = BCGameCore.evaluate(bets, dice);
-      coins += r.payout - r.staked;
-      series.push(coins);
-      matchCounts[r.matches] += 1;
-      stakedTotal += r.staked;
+    function playOneRound() {
+      var dice = diceMath.rollDice();
+      var bets = pickMode === 1 ? { bau: 100 } : { bau: 100, cua: 100, tom: 100 };
+      var res = diceMath.evaluate(bets, dice);
+      coins += res.payout - res.staked;
+      bankSeries.push(coins);
+      hitBins[res.matches] += 1;
+      wagerSum += res.staked;
       done++;
-
-      BCLabCharts.draw(matchCounts, series);
-      var pct = Math.floor((done / rounds) * 100);
-      live().textContent = BCi18n.t("lab.progress", { x: pct, d: done, r: rounds, c: coins.toLocaleString("vi-VN") });
-
-      if (done < rounds) {
-        setTimeout(stepOne, 75);
-      } else {
-        finish();
-      }
     }
 
-    function chunk() {
-      var target = Math.min(done + 25, rounds);
-      for (; done < target; done++) {
-        var dice = BCGameCore.rollDice();
-        var bets = {};
-        if (cells === 1) {
-          bets.bau = 100;
-        } else {
-          bets.bau = 100; bets.cua = 100; bets.tom = 100;
-        }
-        var r = BCGameCore.evaluate(bets, dice);
-        coins += r.payout - r.staked;
-        series.push(coins);
-        matchCounts[r.matches] += 1;
-        stakedTotal += r.staked;
-      }
-      BCLabCharts.draw(matchCounts, series);
-      var pct = Math.floor((done / rounds) * 100);
-      live().textContent = BCi18n.t("lab.progress", { x: pct, d: done, r: rounds, c: coins.toLocaleString("vi-VN") });
-      if (done < rounds) {
-        requestAnimationFrame(chunk);
-      } else {
-        finish();
-      }
+    function tickOne() {
+      playOneRound();
+      simCanvas.draw(hitBins, bankSeries);
+      var pct = Math.floor((done / totalRuns) * 100);
+      statusEl().textContent = lang.t("lab.progress", { x: pct, d: done, r: totalRuns, c: coins.toLocaleString("vi-VN") });
+
+      if (done < totalRuns) setTimeout(tickOne, 75);
+      else finish();
+    }
+
+    function runBatch() {
+      var target = Math.min(done + 25, totalRuns);
+      for (; done < target; done++) playOneRound();
+      simCanvas.draw(hitBins, bankSeries);
+      var pct = Math.floor((done / totalRuns) * 100);
+      statusEl().textContent = lang.t("lab.progress", { x: pct, d: done, r: totalRuns, c: coins.toLocaleString("vi-VN") });
+      if (done < totalRuns) requestAnimationFrame(runBatch);
+      else finish();
     }
 
     function finish() {
-      live().textContent = BCi18n.t("lab.done", { x: rounds });
-      running = false;
-      if (runBtn) runBtn.disabled = false;
-      BCBadges.check("lab_run");
-      BCAudio.pop();
+      statusEl().textContent = lang.t("lab.done", { x: totalRuns });
+      busy = false;
+      if (btn) btn.disabled = false;
+      awards.check("lab_run");
+      sfx.pop();
     }
 
-    if (speed === "slow") {
-      stepOne();
-    } else {
-      requestAnimationFrame(chunk);
-    }
+    if (pace === "slow") tickOne();
+    else requestAnimationFrame(runBatch);
   }
 
-  function live() { return document.querySelector("#lab-live"); }
+  function statusEl() { return document.querySelector("#lab-live"); }
 
-  return { boot: boot, run: run };
+  return { boot: boot, run: startSim };
 })();
