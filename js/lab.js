@@ -20,8 +20,27 @@ window.simLab = (function () {
     });
     document.querySelector("[data-act=lab-run]").addEventListener("click", startSim);
     lang.onLangChange(function () { simCanvas.draw(hitBins, bankSeries); });
+    runPreview(100);
   }
   document.addEventListener("DOMContentLoaded", boot);
+
+  function runPreview(rounds) {
+    hitBins = [0, 0, 0, 0];
+    bankSeries = [1000];
+    wagerSum = 0;
+    var coins = 1000;
+    for (var i = 0; i < rounds; i++) {
+      var dice = diceMath.rollDice();
+      var bets = pickMode === 1 ? { bau: 100 } : { bau: 100, cua: 100, tom: 100 };
+      var res = diceMath.evaluate(bets, dice);
+      coins += res.payout - res.staked;
+      bankSeries.push(coins);
+      hitBins[res.matches] += 1;
+      wagerSum += res.staked;
+    }
+    simCanvas.draw(hitBins, bankSeries);
+    if (statusEl()) statusEl().textContent = lang.t("lab.done", { x: rounds });
+  }
 
   function startSim() {
     if (busy) return;

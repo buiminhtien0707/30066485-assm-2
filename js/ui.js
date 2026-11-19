@@ -246,6 +246,29 @@ window.appShell = (function () {
     document.querySelector("[data-act=drawer-close]").addEventListener("click", closeDrawer);
     document.querySelector(".drawer-backdrop").addEventListener("click", closeDrawer);
 
+    document.querySelectorAll("[data-act=reset]").forEach(function (resetBtn) {
+      var confirmTimer = null;
+      resetBtn.addEventListener("click", function () {
+        if (resetBtn.dataset.confirming !== "1") {
+          resetBtn.dataset.confirming = "1";
+          resetBtn.classList.add("btn-red");
+          var curLang = lang.lang();
+          resetBtn.textContent = curLang === "vn" ? "Bấm lần nữa để xóa" : (curLang === "zh" ? "再次点击确认清除" : "Click again to erase");
+          clearTimeout(confirmTimer);
+          confirmTimer = setTimeout(function () {
+            delete resetBtn.dataset.confirming;
+            resetBtn.classList.remove("btn-red");
+            resetBtn.textContent = lang.t("drawer.reset");
+          }, 3000);
+          return;
+        }
+        clearTimeout(confirmTimer);
+        saveStore.reset();
+        toast(lang.t("drawer.resetOk"));
+        setTimeout(function () { location.reload(); }, 600);
+      });
+    });
+
     document.querySelectorAll(".modal-bc").forEach(function (m) {
       m.addEventListener("click", function (e) {
         if (e.target === m) m.classList.remove("show");
